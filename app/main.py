@@ -4,6 +4,11 @@ from core.db_connection import database
 
 app = FastAPI()
 
+@app.get("/")
+async def root():
+    return {"message": "Hello Fast API"}
+
+
 @app.get("/test-connection")
 def test_connection():
     try:
