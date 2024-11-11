@@ -3,6 +3,7 @@ venv/
 data/
 generated_data/
 __pycache__
+.vscode
 
 # Archivos a ignorar
 .env
