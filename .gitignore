@@ -1,0 +1,8 @@
+# Carpetas a ignorar
+venv/
+data/
+generated_data/
+__pycache__
+
+# Archivos a ignorar
+.env
