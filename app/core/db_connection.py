@@ -10,11 +10,9 @@ class Database:
         # # Crear las tablas en la base de datos
         # SQLModel.metadata.create_all(self.engine)
         
-    # Proveer una sesión de base de datos usando un contexto
-    @contextmanager
-    def get_session(self):
-        with Session(self.engine) as session:
-            yield session
+    def get_session(self) -> Session:
+        # Devuelve una sesión sin un generador; UnitOfWork gestionará la apertura y cierre
+        return Session(self.engine, expire_on_commit=False)
 
 # Instancia global de la base de datos
 database = Database()

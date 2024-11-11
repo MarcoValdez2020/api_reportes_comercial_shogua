@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import date
 from decimal import Decimal
 
-from shared.shared_schemas import Marca
+#from shared.shared_schemas import Marca
 
 
 class Producto(SQLModel, table=True):
@@ -30,8 +30,8 @@ class Producto(SQLModel, table=True):
     costo_unitario: Decimal = Field(..., nullable=False, ge=0)
     clave_shogua: Optional[str] = Field(default=None, max_length=60)
 
-    # Relación con la marca (opcional, si deseas acceder a la relación)
-    marca: 'Marca' = Relationship(back_populates='productos')
+    # # Relación con la marca (opcional, si deseas acceder a la relación)
+    # marca: 'Marca' = Relationship(back_populates='productos')
 
     def to_dict(self):
         """Devuelve un diccionario del objeto."""

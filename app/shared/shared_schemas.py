@@ -1,7 +1,7 @@
 
 from typing import Optional
 from sqlmodel import Field, SQLModel, Relationship
-from enums import GiroMarca, TipoTienda, EstadoOperativo, Comparabilidad, SistemaERP
+from shared.enums import GiroMarca, TipoTienda, EstadoOperativo, Comparabilidad, SistemaERP
 from productos.producto_schemas import Producto
 
 
@@ -14,7 +14,7 @@ class Marca(SQLModel, table=True):
 
 
     # Relación de uno a muchos (una marca puede tener muchos productos, muchos almacenes y muchas tiendas)
-    productos: list["Producto"] = Relationship(back_populates="marca")
+    #productos: list["Producto"] = Relationship(back_populates="marca")
     almacenes: list['Almacen'] = Relationship(back_populates='marca')
     tiendas: list['Tienda'] = Relationship(back_populates='marca')
 

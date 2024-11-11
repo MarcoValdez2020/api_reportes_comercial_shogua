@@ -1,6 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from sqlmodel import text
+
 from core.db_connection import database
+from productos.producto_routes import router as product_router  # Importa el router del submódulo productos
+
 
 app = FastAPI()
 
@@ -20,3 +23,6 @@ def test_connection():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Connection test failed: {e}")
 
+
+# Incluir las rutas de productos en la aplicación principal
+app.include_router(product_router, prefix="/productos", tags=["productos"])
