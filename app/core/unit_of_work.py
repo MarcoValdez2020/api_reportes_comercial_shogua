@@ -1,5 +1,6 @@
 from sqlmodel import Session
 from productos.producto_repositories import ProductoRepository
+from ventas.venta_repository import VentaRepository
 
 from core.db_connection import database  # Importamos la instancia de Database
 
@@ -7,12 +8,14 @@ class UnitOfWork:
     def __init__(self):
         self.session: Session = None
         self.prducto_repository: ProductoRepository = None
+        self.venta_repository: VentaRepository = None
 
 
     def __enter__(self):
         """Inicia la sesión de base de datos y los repositorios"""
         self.session = database.get_session()  # Obtiene la sesión sin contexto
         self.prducto_repository = ProductoRepository(self.session)
+        self.venta_repository = VentaRepository(self.session)
         
         return self
 
