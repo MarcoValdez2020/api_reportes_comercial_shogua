@@ -4,7 +4,7 @@ from sqlalchemy import func
 from typing import List,Tuple
 from ventas.venta_schemas import Venta
 from productos.producto_schemas import Producto
-from shared.shared_schemas import Marca
+from shared.shared_schemas import Marca, Tienda
 
 
 class VentaRepository:
@@ -32,19 +32,21 @@ class VentaRepository:
         return result.all()
     
     # Método de repositorio para obtener ventas agrupadas por año-mes, 
-    def get_sales_grouped_by_month_and_whscode(self, nombre_marca: str, fecha_inicio: date, fecha_fin: date) -> List[Tuple[str, str, float]]:
+    def get_sales_grouped_by_month_and_whscode(self, nombre_marca: str, fecha_inicio: date, fecha_fin: date) -> List[Tuple[str, str, str, float]]:
         # Realizar la consulta utilizando SQLAlchemy (funciones como DATE_TRUNC)
         statement = (
             select(
                 func.date_trunc('month', Venta.fecha).label('mes'),  # Agrupación por mes
                 Venta.whscode.label('whscode'),  # Agrupación por whscode
+                Tienda.nombre_sucursal.label('nombre_tienda'), # Agrupacion por nombre de tienda
                 func.sum(Venta.venta_neta_con_iva).label('total_venta_neta_con_iva')
             )
             .join(Producto, Producto.id_producto == Venta.id_producto)  # JOIN entre Venta y Producto
             .join(Marca, Marca.id_marca == Producto.id_marca)  # JOIN entre Producto y Marca
+            .join(Tienda,Tienda.whscode == Venta.whscode) # JOIN entre Tienda y Venta
             .where(Marca.nombre == nombre_marca)  # Filtro por nombre de marca
             .where(Venta.fecha >= fecha_inicio, Venta.fecha <= fecha_fin)  # Filtro por rango de fechas
-            .group_by(func.date_trunc('month', Venta.fecha), Venta.whscode)  # Agrupamos por mes y whscode
+            .group_by(func.date_trunc('month', Venta.fecha), Venta.whscode, Tienda.nombre_sucursal)  # Agrupamos por mes y whscode
             .order_by('mes', 'whscode')  # Ordenamos por mes y whscode
         )
         try:
