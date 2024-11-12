@@ -32,21 +32,19 @@ class VentaRepository:
         return result.all()
     
     # Método de repositorio para obtener ventas agrupadas por año-mes, 
-    def get_sales_grouped_by_month_and_whscode(self, nombre_marca: str, fecha_inicio: date, fecha_fin: date) -> List[Tuple[str, str, str, float]]:
+    def get_sales_grouped_by_month_and_whscode(self, nombre_marca: str, fecha_inicio: date, fecha_fin: date) -> List[Tuple[str, str, float]]:
         # Realizar la consulta utilizando SQLAlchemy (funciones como DATE_TRUNC)
         statement = (
             select(
                 func.date_trunc('month', Venta.fecha).label('mes'),  # Agrupación por mes
                 Venta.whscode.label('whscode'),  # Agrupación por whscode
-                Tienda.nombre_sucursal.label('nombre_tienda'), # Agrupacion por nombre de tienda
                 func.sum(Venta.venta_neta_con_iva).label('total_venta_neta_con_iva')
             )
             .join(Producto, Producto.id_producto == Venta.id_producto)  # JOIN entre Venta y Producto
             .join(Marca, Marca.id_marca == Producto.id_marca)  # JOIN entre Producto y Marca
-            .join(Tienda,Tienda.whscode == Venta.whscode) # JOIN entre Tienda y Venta
             .where(Marca.nombre == nombre_marca)  # Filtro por nombre de marca
             .where(Venta.fecha >= fecha_inicio, Venta.fecha <= fecha_fin)  # Filtro por rango de fechas
-            .group_by(func.date_trunc('month', Venta.fecha), Venta.whscode, Tienda.nombre_sucursal)  # Agrupamos por mes y whscode
+            .group_by(func.date_trunc('month', Venta.fecha), Venta.whscode)  # Agrupamos por mes y whscode
             .order_by('mes', 'whscode')  # Ordenamos por mes y whscode
         )
         try:
@@ -56,5 +54,25 @@ class VentaRepository:
             print(f'Fallo al obtener las agrupadas: {e}')
         return result.all()        
 
-    # Métodos necesarios para filtrar:
-    #get_all_sales_by_whscode()
+    # Método para obtener las ventas agrupadas por año
+    def get_sales_grouped_by_year_and_whscode(self, nombre_marca: str, fecha_inicio: date, fecha_fin: date) -> List[Tuple[str, str, float]]:
+        # Realizar la consulta utilizando SQLAlchemy (funciones como DATE_TRUNC)
+        statement = (
+            select(
+                func.date_trunc('year', Venta.fecha).label('anio'),  # Agrupación por mes
+                Venta.whscode.label('whscode'),  # Agrupación por whscode
+                func.sum(Venta.venta_neta_con_iva).label('total_venta_neta_con_iva')
+            )
+            .join(Producto, Producto.id_producto == Venta.id_producto)  # JOIN entre Venta y Producto
+            .join(Marca, Marca.id_marca == Producto.id_marca)  # JOIN entre Producto y Marca
+            .where(Marca.nombre == nombre_marca)  # Filtro por nombre de marca
+            .where(Venta.fecha >= fecha_inicio, Venta.fecha <= fecha_fin)  # Filtro por rango de fechas
+            .group_by(func.date_trunc('year', Venta.fecha), Venta.whscode)  # Agrupamos por mes y whscode
+            .order_by('anio', 'whscode')  # Ordenamos por mes y whscode
+        )
+        try:
+            result = self.session.exec(statement)
+            print(result)
+        except Exception as e:
+            print(f'Fallo al obtener las agrupadas: {e}')
+        return result.all()        

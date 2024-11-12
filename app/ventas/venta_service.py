@@ -24,7 +24,7 @@ class VentaService:
                     raise HTTPException(status_code=500, detail="Error al obtener registros")
             
     def get_sales_grouped_by_month_and_whscode(self,nombre_marca:str, fecha_inicio:date, fecha_fin:date) -> List[Tuple[str, str, str, float]]:
-        """Obtener todas las ventas de una marca en un rago de fechas de la base de datos."""
+        """Obtener todas las ventas de una marca agrupadas por tienda, año mes en un rago de fechas de la base de datos."""
         with UnitOfWork() as uow:
             # Intenta la operacion en la bd
             try:
@@ -33,4 +33,71 @@ class VentaService:
                     # Log de la excepción para saber el error
                     print(f"Error al obtener registros: {e}")
                     raise HTTPException(status_code=500, detail="Error al obtener registros")
+
+
+    def get_sales_grouped_by_year_and_whscode(self,nombre_marca:str, fecha_inicio:date, fecha_fin:date) -> List[Tuple[str, str, str, float]]:
+        """Obtener todas las ventas de una marca agrupadas por tienda y año en un rago de fechas de la base de datos."""
+        with UnitOfWork() as uow:
+            # Intenta la operacion en la bd
+            try:
+                return uow.venta_repository.get_sales_grouped_by_year_and_whscode(nombre_marca, fecha_inicio, fecha_fin)
+            except Exception as e:
+                    # Log de la excepción para saber el error
+                    print(f"Error al obtener registros: {e}")
+                    raise HTTPException(status_code=500, detail="Error al obtener registros")
     
+
+    def get_month_end_report_ag_y_mu(self,nombre_marca:str, fecha_inicio:date, fecha_fin:date):
+        """Metodo para obtener los datos de cierre de mes de las marcas Ay Güey y Mumuso"""
+
+        # Obtener registros para 
+
+        return
+    
+
+
+
+    #? Funciones de transformacion de datos
+
+    def transform_sales_gropued_by_month(self, ventas_mes:List[Tuple[str, str, float]]):
+            """Método para transformar de lista de tupla a lista de diccionarios"""
+            result_dict = []
+            
+            for record in ventas_mes:
+                # La tupla tiene el siguiente formato: (mes, whscode, total_venta_neta_con_iva)
+                mes = record[0].strftime('%Y-%m-%d')  # Formateamos la fecha en 'yyyy-mm-dd'
+                whscode = record[1]  # Código del almacén
+                total_venta_neta_con_iva = record[2]  # Convertimos el total de Decimal a float
+                
+                # Creamos el diccionario con el formato deseado
+                result_dict.append({
+                    'mes': mes,
+                    'whscode': whscode,
+                    'total_venta_neta_con_iva': float(total_venta_neta_con_iva)
+                })
+
+            return result_dict
+
+
+    def transform_sales_gropued_by_year(self, ventas_anio:List[Tuple[str, str, float]]):
+            """Método para transformar de lista de tupla a lista de diccionarios"""
+            result_dict = []
+            
+            for record in ventas_anio:
+                # La tupla tiene el siguiente formato: (mes, whscode, total_venta_neta_con_iva)
+                anio = record[0].strftime('%Y-%m-%d')  # Formateamos la fecha en 'yyyy-mm-dd'
+                whscode = record[1]  # Código del almacén
+                total_venta_neta_con_iva = record[2]  # Convertimos el total de Decimal a float
+                
+                # Creamos el diccionario con el formato deseado
+                result_dict.append({
+                    'anio': anio,
+                    'whscode': whscode,
+                    'total_venta_neta_con_iva': float(total_venta_neta_con_iva)
+                })
+
+            return result_dict
+
+
+    #? Funciones para trabajar con datos
+
