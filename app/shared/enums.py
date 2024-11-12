@@ -11,7 +11,7 @@ class EstadoOperativo(str, Enum):
 
 class Comparabilidad(str, Enum):
     COMPARABLE = "COMPARABLE"
-    NO_COMPARABLE = "NO_COMPARABLE"
+    NO_COMPARABLE = "NO COMPARABLE"
 
 class SistemaERP(str, Enum):
     SAP = "SAP"

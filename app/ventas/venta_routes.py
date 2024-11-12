@@ -5,9 +5,11 @@ from ventas.venta_schemas import Venta
 from ventas.venta_service import VentaService
 from ventas.ventas_responses import MonthlySalesResponse, YearlySalesResponse
 
+from shared.shared_service import SharedService
 
 router = APIRouter()
-ventas_service = VentaService()
+shared_service = SharedService()
+ventas_service = VentaService(shared_service)
 
 
 @router.get("/get-all-by-brand-name",response_model=list[Venta])
@@ -18,7 +20,6 @@ async def get_all_ventas_by_brand_name(
 ):
     try:
         ventas = ventas_service.get_all_sales_by_brand(nombre_marca, fecha_inicio, fecha_fin)
-        
         return ventas
     except Exception as e:
         print(f"Error en get_all_products: {e}")
@@ -59,3 +60,15 @@ async def get_sales_grouped_by_year_and_whscode(
         raise HTTPException(status_code=500, detail="Error interno del servidor")
     
 
+@router.get("/get-month-end-report-ag-y-mu")
+async def get_month_end_report_ag_y_mu(
+    nombre_marca:str, 
+    mes:str
+):
+    try:
+        ventas = ventas_service.get_month_end_report_ag_y_mu(nombre_marca, mes)
+        return ventas
+    except Exception as e:
+        print(f"Error en get_month_end_report_ag_y_mu: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+    

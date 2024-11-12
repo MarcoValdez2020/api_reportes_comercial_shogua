@@ -28,11 +28,25 @@ class Tienda(SQLModel, table=True):
     ciudad: Optional[str] = None
     tipo_tienda: TipoTienda = Field(..., nullable=False)
     estado_operativo: EstadoOperativo = Field(..., nullable=False)
-    comparabilidad: Comparabilidad = Field(..., nullable=False)
+    comparabilidad: str = Field(..., nullable=False) # No se uso enum porque se tiene error al cargarlo por el espacio en blanco
     sistema_erp: SistemaERP = Field(..., nullable=False)
 
     # Relación con la marca (opcional, si deseas acceder a la relación)
     marca: 'Marca' = Relationship(back_populates='tiendas')
+
+    def to_dict(self):
+        """Devuelve un diccionario del objeto."""
+        return {
+            'whscode':self.whscode,
+            'nombre_sucursal': self.nombre_sucursal,
+            'id_marca': self.id_marca,
+            'no_proscai': self.no_proscai,
+            'ciudad': self.ciudad,
+            'tipo_tienda': self.tipo_tienda,
+            'estado_operativo': self.estado_operativo,
+            'comparabilidad': self.comparabilidad, 
+            'sistema_erp': self.sistema_erp
+        }  
 
 
 class Almacen(SQLModel, table=True):
