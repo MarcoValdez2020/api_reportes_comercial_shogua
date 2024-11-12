@@ -19,6 +19,7 @@ class Producto(SQLModel, table=True):
     categoria: Optional[str] = Field(default=None, max_length=40)
     subcategoria: Optional[str] = Field(default=None, max_length=40)
     color: Optional[str] = Field(default=None, max_length=40)
+    disenio: Optional[str] = Field(default=None, max_length=100)
     coleccion: Optional[str] = Field(default=None, max_length=40)
     modelo: Optional[str] = Field(default=None, max_length=60)
     material: Optional[str] = Field(default=None, max_length=40)
@@ -45,6 +46,7 @@ class Producto(SQLModel, table=True):
             'categoria': self.categoria, 
             'subcategoria': self.subcategoria, 
             'color': self.color, 
+            'disenio': self.disenio, 
             'coleccion': self.coleccion, 
             'modelo': self.modelo, 
             'material': self.material, 
