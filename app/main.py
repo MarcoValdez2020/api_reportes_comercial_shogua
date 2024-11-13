@@ -4,7 +4,7 @@ from sqlmodel import text
 from core.db_connection import database
 from productos.producto_routes import router as product_router  # Importa el router del submódulo productos
 from ventas.venta_routes import router as ventas_router  # Importa el router del submódulo ventas
-
+from reports.report_routes import router as reports_router # Importar el router del submódulo reportes
 
 app = FastAPI()
 
@@ -26,5 +26,6 @@ def test_connection():
 
 
 # Incluir las rutas de productos en la aplicación principal
-app.include_router(product_router, prefix="/productos", tags=["productos"])
-app.include_router(ventas_router, prefix="/ventas", tags=["ventas"])
+app.include_router(product_router, prefix="/productos", tags=["Productos"])
+app.include_router(ventas_router, prefix="/ventas", tags=["Ventas"])
+app.include_router(reports_router, prefix="/reportes", tags=["Reportes"])
