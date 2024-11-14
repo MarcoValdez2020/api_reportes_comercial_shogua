@@ -1,6 +1,7 @@
 from sqlmodel import Session
 from productos.producto_repositories import ProductoRepository
 from ventas.venta_repository import VentaRepository
+from inventarios.inventario_repositories import InventarioRepository
 from shared.shared_repositories import SharedRepository
 
 from core.db_connection import database  # Importamos la instancia de Database
@@ -10,6 +11,7 @@ class UnitOfWork:
         self.session: Session = None
         self.prducto_repository: ProductoRepository = None
         self.venta_repository: VentaRepository = None
+        self.inventario_repository: InventarioRepository = None
         self.shared_repository: SharedRepository = None
 
 
@@ -18,6 +20,7 @@ class UnitOfWork:
         self.session = database.get_session()  # Obtiene la sesión sin contexto
         self.prducto_repository = ProductoRepository(self.session)
         self.venta_repository = VentaRepository(self.session)
+        self.inventario_repository = InventarioRepository(self.session)
         self.shared_repository = SharedRepository(self.session)
         
         return self
