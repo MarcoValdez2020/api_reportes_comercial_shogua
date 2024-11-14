@@ -55,6 +55,18 @@ class VentaService:
                     raise HTTPException(status_code=500, detail="Error al obtener registros")
     
 
+    def get_ventas_promedio_mensual_por_marca(self, nombre_marca: str,fecha_inicio:date, fecha_fin: date) -> list: 
+        """Obtener las ventas promedio por tienda en un rago de fechas de la base de datos."""
+        with UnitOfWork() as uow:
+            # Intenta la operacion en la bd
+            try:
+                return uow.venta_repository.get_ventas_promedio_mensual_por_marca(nombre_marca, fecha_inicio, fecha_fin)
+            except Exception as e:
+                    # Log de la excepción para saber el error
+                    print(f"Error al obtener registros: {e}")
+                    raise HTTPException(status_code=500, detail="Error al obtener registros")
+
+
     #? Funciones de transformacion de datos
 
     def transform_sales_gropued_by_month(self, ventas_mes:List[Tuple[str, str, float]]):

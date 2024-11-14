@@ -1,6 +1,6 @@
 from sqlmodel import Session,select
 from datetime import date
-from sqlalchemy import func
+from sqlalchemy import func, select, func, cast, DECIMAL, distinct
 from typing import List,Tuple
 from ventas.venta_schemas import Venta
 from productos.producto_schemas import Producto
@@ -76,3 +76,32 @@ class VentaRepository:
         except Exception as e:
             print(f'Fallo al obtener las agrupadas: {e}')
         return result.all()        
+    
+    def get_ventas_promedio_mensual_por_marca(self, nombre_marca: str,fecha_inicio:date, fecha_fin: date) -> list:  
+        # Subconsulta con JOINs y filtros para obtener la suma y el promedio mensual
+        statement = (
+            select(
+                Venta.whscode,
+                func.count(distinct(func.date_trunc('month', Venta.fecha))).label("meses_con_venta"),
+                func.sum(cast(Venta.cantidad, DECIMAL)).label("total_ventas"),
+                (
+                    func.coalesce(
+                        func.sum(cast(Venta.cantidad, DECIMAL)) / func.count(distinct(func.date_trunc('month', Venta.fecha))),
+                        0
+                    )
+                ).label("venta_promedio")
+            )
+            .join(Tienda, Venta.whscode == Tienda.whscode)  # JOIN entre Venta y Tienda
+            .join(Marca, Tienda.id_marca == Marca.id_marca)  # JOIN entre Tienda y Marca
+            .where(Marca.nombre == nombre_marca)  # Filtro por nombre de la marca
+            .where(Venta.fecha >= func.date_trunc('month', fecha_inicio))  # Filtro por fecha de inicio
+            .where(Venta.fecha <= fecha_fin)  # Filtro por fecha de fin
+            .group_by(Venta.whscode)  # Agrupación por tienda
+        )
+
+        try:
+            result = self.session.exec(statement)
+            return result.all()
+        except Exception as e:
+            print(f'Fallo al obtener las ventas promedio mensual por marca: {e}')
+            return []

@@ -1,18 +1,14 @@
 import pandas as pd
+from pandas.tseries.offsets import DateOffset
 import numpy as np
 import calendar
 import json
-from typing import List, Tuple
 from datetime import datetime, date
-from fastapi import  HTTPException
-from typing import List, TypeVar
-from sqlmodel import SQLModel
-
 
 from shared.shared_service import SharedService
 from ventas.venta_service import VentaService
 from inventarios.inventario_service import InventarioService
-
+from reports.report_respones import EndMonthReportAGyMumuso,FinallyEndMonthReportAGyMumuso
 
 # Definimos la calse servicio, que sera la encargada de gestionar la logica de negocio, haciendo llamadas al repositorio
 class ReportService:
@@ -83,20 +79,21 @@ class ReportService:
         ventas_ytd_anio_actual = self.venta_service.get_sales_grouped_by_year_and_whscode(nombre_marca,fecha_inicio_anio_actual, fecha_fin_mes_anio_actual)
         ventas_ytd_dict_anio_actual = self.venta_service.transform_sales_gropued_by_year(ventas_ytd_anio_actual)
         ventas_ytd_anio_actual = pd.DataFrame(ventas_ytd_dict_anio_actual)
-        
 
+        # Obtenemos las ventas promedio de cada tienda
+        ventas_promedio_df = self.calcularVentaPromedio(nombre_marca,fecha_fin_mes_anio_actual)
         
-        reporte_cierre_mes = self.fusionar_dataframes_cierre_mes_ag_y_mu(ventas_mes_anterior_df,ventas_mes_actual_df,ventas_ytd_anio_anterior_df,ventas_ytd_anio_actual,tiendas_df,inventarios_tiendas_df)
-        
-    
-        
+        reporte_cierre_mes = self.fusionar_dataframes_cierre_mes_ag_y_mu(ventas_mes_anterior_df,ventas_mes_actual_df,
+                                                                        ventas_ytd_anio_anterior_df,ventas_ytd_anio_actual,
+                                                                        tiendas_df,inventarios_tiendas_df, ventas_promedio_df)
+            
         return reporte_cierre_mes
     
 
 
     def fusionar_dataframes_cierre_mes_ag_y_mu(self, ventas_mes_anterior_df:pd.DataFrame, ventas_mes_actual_df:pd.DataFrame,
                                                 ventas_ytd_anio_anterior_df:pd.DataFrame,ventas_ytd_anio_actual:pd.DataFrame,
-                                                tiendas_df:pd.DataFrame, inventarios_tiendas_df:pd.DataFrame):
+                                                tiendas_df:pd.DataFrame, inventarios_tiendas_df:pd.DataFrame, ventas_promedio_df: pd.DataFrame):
         
         #Renombrar columnas de cada df
         ventas_mes_anterior_df.rename(columns={"total_venta_neta_con_iva": "venta_mensual_anio_anterior_iva"}, inplace=True)
@@ -138,15 +135,59 @@ class ReportService:
         # Llenamos con 0 las existencias que no tengan coincidencia
         ventas_cierre_mes_df['existencia'] = ventas_cierre_mes_df['existencia'].fillna(0)
 
+        # Hacemos el merge con las ventas promedio
+        ventas_cierre_mes_df = pd.merge(ventas_cierre_mes_df,ventas_promedio_df, on='whscode', how='outer')
 
-        ventas_mes_prot = pd.merge(ventas_cierre_mes_df,tiendas_df[['whscode','nombre_sucursal','tipo_tienda','ciudad']],on='whscode',how='left')
-        # print(ventas_mes_prot)
-        ventas_mes_json = ventas_mes_prot.to_json(orient='records')
-        # Convertir el JSON string a un objeto Python (lista de diccionarios)
-        json_obj = json.loads(ventas_mes_json)
+        # Calculamos el mos
+        ventas_cierre_mes_df['mos'] = ventas_cierre_mes_df['existencia'] / ventas_cierre_mes_df['venta_promedio'].astype(float)
 
-        return json_obj
+        ventas_cierre_mes_df = pd.merge(ventas_cierre_mes_df,tiendas_df[['whscode','nombre_sucursal','tipo_tienda','ciudad','estado_operativo','comparabilidad']],on='whscode',how='left')
+
+        # Crear una lista de objetos EndMonthReportAGyMumuso a partir del DataFrame
+        list_of_reports = [
+            EndMonthReportAGyMumuso(**row.to_dict()) for _, row in ventas_cierre_mes_df.iterrows()
+        ]
+
+        # Formar el totales del reporte final
+        total_venta_mensual_anio_anterior_iva = ventas_cierre_mes_df['venta_mensual_anio_anterior_iva'].sum()
+        total_venta_mensual_anio_actual_iva = ventas_cierre_mes_df['venta_mensual_anio_actual_iva'].sum()
+        total_variacion_mes_porcentaje = ((total_venta_mensual_anio_actual_iva / total_venta_mensual_anio_anterior_iva)-1)*100
+        total_variacion_mes_efectivo = total_venta_mensual_anio_actual_iva - total_venta_mensual_anio_anterior_iva
+
+        total_ytd_anio_anterior_iva = ventas_cierre_mes_df['ytd_anio_anterior_iva'].sum()
+        total_ytd_anio_actual_iva = ventas_cierre_mes_df['ytd_anio_actual_iva'].sum()
+        total_variacion_ytd_porcentaje = ((total_ytd_anio_actual_iva / total_ytd_anio_anterior_iva)-1)*100
+        total_variacion_ytd_efectivo = total_ytd_anio_actual_iva - total_ytd_anio_anterior_iva
+
+        total_existencia = ventas_cierre_mes_df['existencia'].sum()
+        total_venta_promedio = float(ventas_cierre_mes_df['venta_promedio'].sum())
+        total_mos = total_existencia/total_venta_promedio
+
+
+        reporte_final_cierre_mes = FinallyEndMonthReportAGyMumuso(
+            stores=list_of_reports,
+            total_venta_mensual_anio_anterior_iva=total_venta_mensual_anio_anterior_iva,
+            total_venta_mensual_anio_actual_iva=total_venta_mensual_anio_actual_iva,
+            total_variacion_mes_porcentaje=total_variacion_mes_porcentaje,
+            total_variacion_mes_efectivo=total_variacion_mes_efectivo,
+            total_ytd_anio_anterior_iva=total_ytd_anio_anterior_iva,
+            total_ytd_anio_actual_iva=total_ytd_anio_actual_iva,
+            total_variacion_ytd_porcentaje=total_variacion_ytd_porcentaje,
+            total_variacion_ytd_efectivo=total_variacion_ytd_efectivo,
+            total_existencia=total_existencia,
+            total_mos=total_mos
+        )
+        
+        return reporte_final_cierre_mes
     
 
-    def calcularVentaPromedio(self):
-        return
+    def calcularVentaPromedio(self, nombre_marca:str, fecha_fin:date):
+        mes_num = fecha_fin.month
+        anio_fecha_fin = fecha_fin.year
+        # Calculamos la fecha de inicio de la consulta que es 11 meses atras
+        fecha_inicio = datetime(anio_fecha_fin,mes_num,1) - DateOffset(months=11) 
+        # print(f'****************fecha de inicio: {fecha_inicio}')
+
+        ventas_promedio = self.venta_service.get_ventas_promedio_mensual_por_marca(nombre_marca,fecha_inicio,fecha_fin)
+        ventas_promedio_df = pd.DataFrame(ventas_promedio)
+        return ventas_promedio_df
