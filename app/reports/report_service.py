@@ -132,9 +132,6 @@ class ReportService:
         # Hacer el merge con los inventarios
         ventas_cierre_mes_df = pd.merge(ventas_cierre_mes_df,inventarios_tiendas_df, on='whscode', how='outer')
 
-        # Llenamos con 0 las existencias que no tengan coincidencia
-        ventas_cierre_mes_df['existencia'] = ventas_cierre_mes_df['existencia'].fillna(0)
-
         # Hacemos el merge con las ventas promedio
         ventas_cierre_mes_df = pd.merge(ventas_cierre_mes_df,ventas_promedio_df, on='whscode', how='outer')
 
@@ -143,6 +140,10 @@ class ReportService:
 
         ventas_cierre_mes_df = pd.merge(ventas_cierre_mes_df,tiendas_df[['whscode','nombre_sucursal','tipo_tienda','ciudad','estado_operativo','comparabilidad']],on='whscode',how='left')
 
+        # Llenamos con 0 las existencias que no tengan coincidencia
+        ventas_cierre_mes_df= ventas_cierre_mes_df.fillna(0)
+        
+        # print(ventas_cierre_mes_df)
         # Crear una lista de objetos EndMonthReportAGyMumuso a partir del DataFrame
         list_of_reports = [
             EndMonthReportAGyMumuso(**row.to_dict()) for _, row in ventas_cierre_mes_df.iterrows()
