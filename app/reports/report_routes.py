@@ -42,6 +42,6 @@ async def get_month_end_report_tous_hm_y_ricodeli(
     except ValueError as e:  # Excepción específica de tu lógica de negocio
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        print(f"Error en get_month_end_report_ag_y_mu: {e}")
+        print(f"Error en get_month_end_report_tous_hm_y_ricodeli: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
     

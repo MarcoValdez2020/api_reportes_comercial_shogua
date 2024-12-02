@@ -85,13 +85,15 @@ class InventarioRepository:
                 InventarioAlmacen.id_almacen.label('id_almacen'),
                 func.sum(InventarioAlmacen.existencia).label('total_existencias')
             )
-            .join(Almacen, InventarioAlmacen.id_almacen == Almacen.id_almacen)  # JOIN entre Tienda e InventarioTienda
-            .join(Marca, Marca.id_marca == Almacen.id_marca)  # JOIN entre Marca y Tienda
+            .join(Almacen, InventarioAlmacen.id_almacen == Almacen.id_almacen)  # JOIN entre Almacen e InventarioAlmacen
+            .join(Marca, Marca.id_marca == Almacen.id_marca)  # JOIN entre Marca y Almacen
             .where(
                 Marca.nombre == nombre_marca,  # Filtro por nombre de marca
-                Almacen.whscode.in_(['CDCUN01', 'CDMX01'])  # Seleccionamos solo los almacenes fisicos
+                Almacen.whscode.in_(['CDCUN01', 'CDMX01'])  # Filtro para almacenes físicos
             )
+            .group_by(InventarioAlmacen.id_almacen)
         )
+    
         
         try:
             result = self.session.exec(statement)
