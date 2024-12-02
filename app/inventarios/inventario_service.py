@@ -46,3 +46,28 @@ class InventarioService:
                 })
 
             return result_dict    
+
+
+    # Funcion para obtener la cantidad de stock actual de todos los inventarios fisicos
+    def get_virtual_warehouses_inventories_total_stock_by_brand_name(self, nombre_marca: str):
+        """Función para obtener El total de existencias en cantidad de los almacenes virtuales de una marca"""
+        with UnitOfWork() as uow:
+            # Intenta la operacion en la bd
+            try:
+                return uow.inventario_repository.get_virtual_warehouses_inventories_total_stock_by_brand_name(nombre_marca)
+            except Exception as e:
+                    # Log de la excepción para saber el error
+                    print(f"Error al obtener registros: {e}")
+
+
+
+    # Funcion para obtener los almacenes fisicos con su cantidad
+    def get_physical_warehouses_inventories_total_stock_by_brand_name(self, nombre_marca: str):
+        """Función para obtener El total de existencias en cantidad de los almacenes virtuales de una marca"""
+        with UnitOfWork() as uow:
+            # Intenta la operacion en la bd
+            try:
+                return uow.inventario_repository.get_physical_warehouses_inventories_total_stock_by_brand_name(nombre_marca)
+            except Exception as e:
+                    # Log de la excepción para saber el error
+                    print(f"Error al obtener registros: {e}")
