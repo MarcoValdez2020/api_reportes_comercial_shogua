@@ -1,7 +1,9 @@
+import pandas as pd
 from sqlmodel import Session,select
 from datetime import date
 from sqlalchemy import func, select, func, cast, DECIMAL, distinct
 from typing import List,Tuple
+
 from ventas.venta_schemas import Venta
 from productos.producto_schemas import Producto
 from shared.shared_schemas import Marca, Tienda
@@ -104,4 +106,31 @@ class VentaRepository:
             return result.all()
         except Exception as e:
             print(f'Fallo al obtener las ventas promedio mensual por marca: {e}')
+            return []
+        
+
+    # Funcion para obtener la primera y ultima fecha de venta de una marca
+    def get_first_and_last_sale_date_by_brand_name(self, nombre_marca: str):  
+        # Subconsulta con JOINs y filtros para obtener la suma y el promedio mensual
+        statement = (
+            select(
+                Marca.nombre.label('marca'),
+                func.min(Venta.fecha).label('primera_fecha_venta'),
+                func.max(Venta.fecha).label('ultima_fecha_venta')
+            )
+            .join(Producto, Venta.id_producto == Producto.id_producto)  # JOIN entre venta y producto
+            .join(Marca, Producto.id_marca == Marca.id_marca)  # JOIN entre producto y marca
+            .where(Marca.nombre == nombre_marca)  # Filtro por el nombre de la marca
+            .group_by(Marca.nombre)  # Agrupar por el nombre de la marca
+        )
+
+        try:
+            result = self.session.exec(statement)
+            
+            # Convertir los resultados a un DataFrame de Pandas
+            df_resultados = pd.DataFrame(result)
+
+            return df_resultados
+        except Exception as e:
+            print(f'Fallo al obtener la primera y ultima fecha de marca: {e}')
             return []

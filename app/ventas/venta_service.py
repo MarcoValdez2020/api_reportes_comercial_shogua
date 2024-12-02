@@ -108,5 +108,18 @@ class VentaService:
 
             return result_dict
 
+
+    def get_first_and_last_sale_date_by_brand_name(self,nombre_marca:str):
+            """Obtener la primera y ultima fecha de ventas de una marca"""
+            with UnitOfWork() as uow:
+                # Intenta la operacion en la bd
+                try:
+                    fechas_df =  uow.venta_repository.get_first_and_last_sale_date_by_brand_name(nombre_marca)
+                    return fechas_df.to_dict('records')
+                except Exception as e:
+                        # Log de la excepción para saber el error
+                        print(f"Error al obtener registros: {e}")
+
+
     #? Funciones para trabajar con datos
 

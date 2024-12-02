@@ -3,7 +3,7 @@ from datetime import date
 
 from ventas.venta_schemas import Venta
 from ventas.venta_service import VentaService
-from ventas.ventas_responses import MonthlySalesResponse, YearlySalesResponse
+from ventas.ventas_responses import FirstAndLastSaleDate, MonthlySalesResponse, YearlySalesResponse
 
 router = APIRouter()
 ventas_service = VentaService()
@@ -52,6 +52,19 @@ async def get_sales_grouped_by_year_and_whscode(
         ventas_dict = ventas_service.transform_sales_gropued_by_year(ventas_anio)
         # Retornar el diccionario
         return ventas_dict
+    except Exception as e:
+        print(f"Error en get_sales_grouped_by_year_and_whscode: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+    
+
+
+@router.get("/get-sale-dates-by-brand-name", response_model=list[FirstAndLastSaleDate])
+async def get_first_and_last_sale_date_by_brand_name(
+    nombre_marca:str,
+):
+    try:
+        ultima_y_primera_fecha_venta = ventas_service.get_first_and_last_sale_date_by_brand_name(nombre_marca)
+        return ultima_y_primera_fecha_venta
     except Exception as e:
         print(f"Error en get_sales_grouped_by_year_and_whscode: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
