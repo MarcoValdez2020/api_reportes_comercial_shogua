@@ -7,6 +7,7 @@ from reports.report_service import ReportService
 from inventarios.inventario_service import InventarioService
 
 from reports.report_respones import FinallyEndMonthReportAGyMumuso
+from reports.report_respones import FinallyEndMonthReportTous
 
 router = APIRouter()
 shared_service = SharedService()
@@ -30,7 +31,7 @@ async def get_month_end_report_ag_y_mu(
     
 
 # Ruta expuesta para el reporte de cierre de mes de Tous
-@router.get("/get-month-end-report-tous")
+@router.get("/get-month-end-report-tous", response_model=FinallyEndMonthReportTous)
 async def get_month_end_report_tous_hm_y_ricodeli(
     nombre_marca:str, 
     mes:str
