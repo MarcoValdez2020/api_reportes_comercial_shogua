@@ -200,7 +200,7 @@ class ReportService:
     # Funcion para obtener el reporte de cierre de mes de tous
     def get_month_end_report_tous_hm_y_ricodeli(self, nombre_marca:str, mes:str):
         """Metodo para obtener los datos de cierre de mes de Tous Hetal Mevy y Ricodeli"""
-        print(f'mes: {mes}')
+        # print(f'mes: {mes}')
         # Obtener registros de las tiendas por marca y transformalo en df
         tiendas = [t.to_dict() for t in self.shared_service.get_all_stores_by_brand_name(nombre_marca)]
         tiendas_df = pd.DataFrame(tiendas)
@@ -391,8 +391,8 @@ class ReportService:
         # Renombramos los campos para coincidir con el modelo de respuesta
         ventas_cierre_mes_df.rename(columns={'mos':'mos_tienda'}, inplace=True)
         ventas_cierre_mes_df.rename(columns={'existencia':'existencia_tienda'}, inplace=True)
-        print(ventas_cierre_mes_df.info())
-        print(ventas_cierre_mes_df)
+        # print(ventas_cierre_mes_df.info())
+        # print(ventas_cierre_mes_df)
 
 
         # print(ventas_cierre_mes_df)
@@ -441,7 +441,7 @@ class ReportService:
             total_mos_tiendas=total_mos_tiendas,
 
             total_mos_bodegas = total_mos_bodegas,
-            toal_mos_almacenes = total_mos_almacenes
+            total_mos_almacenes = total_mos_almacenes
 
         )
         

@@ -86,4 +86,4 @@ class FinallyEndMonthReportTous(BaseModel):
         total_mos_tiendas: float
 
         total_mos_bodegas: float  # Las bodegas son almacenes físicos
-        toal_mos_almacenes: float # Los almacenes son almacenes virtuales
+        total_mos_almacenes: float # Los almacenes son almacenes virtuales
