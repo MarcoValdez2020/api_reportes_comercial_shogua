@@ -419,7 +419,7 @@ class ReportService:
         #! TODO: Calcular el total del mos de bodegas
         # Sumamos el total de existencia de bodegas
         total_existencia_bodegas = 0
-        total_mos_bodegas = 0
+        total_mos_bodegas = (total_existencia_tiendas + total_existencia_bodegas) / total_venta_promedio
 
         # Calculamos el mos de los almacenes
         total_existencia_almacenes = float(suma_stock_almacenes_virtuales)
