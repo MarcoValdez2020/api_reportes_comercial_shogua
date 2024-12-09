@@ -350,12 +350,13 @@ class ReportService:
 
         # Realizar la separacion de tijuana para no someterlo a operaciones de almacenes fisicos
         tiendas_tijuana_df = ventas_cierre_mes_df[ventas_cierre_mes_df['whscode'].str.contains('TSTJ', case=False, na=False)].copy()
+        tiendas_monterrey_df = ventas_cierre_mes_df[ventas_cierre_mes_df['whscode'].str.contains('TSMTY', case=False, na=False)].copy()
         # print(tiendas_tijuana_df.info())
         # print(tiendas_tijuana_df)
 
 
         # Separamos en un df las tiendas de cancun para calcular sus porcentajes de participacion
-        #! TODO: Cuando tenga el acceso a tous ricodeli tengo que realizar estas funciones
+
     
         #Separamos los almacenes de cancun y cdmx
         almacen_fisico_cancun = inventarios_almacenes_fisicos_df[inventarios_almacenes_fisicos_df['whscode']=='CDCUN01'].copy() 
@@ -386,7 +387,7 @@ class ReportService:
         tiendas_cdmx_df = self.calcularMosAlmacen(tiendas_cdmx_con_piezas_almacen)
 
         #* Realizar la fuision entre los tres dfs, el de tijuana, con cancun y cdmx ya con sus almacenes de cun y cdmx
-        ventas_cierre_mes_df = pd.concat([tiendas_tijuana_df, tiendas_cancun_df,tiendas_cdmx_df], ignore_index=True)
+        ventas_cierre_mes_df = pd.concat([tiendas_tijuana_df, tiendas_monterrey_df, tiendas_cancun_df,tiendas_cdmx_df], ignore_index=True)
         # Llenamos con 0 los almacenes que no tengan existencia
         ventas_cierre_mes_df = ventas_cierre_mes_df.fillna(0)
 
