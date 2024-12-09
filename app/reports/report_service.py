@@ -216,19 +216,22 @@ class ReportService:
 
         # Obtener la suma de los inventarios fisicos de los almacenes
         inventarios_almacenes_fisicos = self.inventario_service.get_physical_warehouses_inventories_total_stock_by_brand_name(nombre_marca)
-        
+        # print(inventarios_almacenes_fisicos, len(inventarios_almacenes_fisicos))
         # En caso de no tener existencia en los almacenes físicos (dos almacenes), retornar el diccionario con valores vacíos
         if len(inventarios_almacenes_fisicos) == 0:
             inventarios_almacenes_fisicos = [
-                ('CDCUN01', 0),
-                ('CDMX01', 0)
+                ('6','CDCUN01', 0),
+                ('7','CDMX01', 0)
             ]
 
         # Convertir los inventarios a un DataFrame
         inventarios_almacenes_fisicos_df = pd.DataFrame(
             inventarios_almacenes_fisicos,
-            columns=['whscode', 'total_existencias']  # Nombres de las columnas
+            columns=['id_almacen','whscode', 'total_existencias']  # Nombres de las columnas
         )
+
+
+
         # Obtener todas las ventas de inicio a fin del mes seleccionado
         anio_actual = date.today().year
         anio_anterior = date.today().year-1
@@ -346,7 +349,7 @@ class ReportService:
         # print(ventas_cierre_mes_df.info())
 
         # Realizar la separacion de tijuana para no someterlo a operaciones de almacenes fisicos
-        tiendas_tijuana_df = ventas_cierre_mes_df[ventas_cierre_mes_df['whscode'].str.contains('TSTJ', case=False, na=False)]
+        tiendas_tijuana_df = ventas_cierre_mes_df[ventas_cierre_mes_df['whscode'].str.contains('TSTJ', case=False, na=False)].copy()
         # print(tiendas_tijuana_df.info())
         # print(tiendas_tijuana_df)
 
@@ -355,22 +358,16 @@ class ReportService:
         #! TODO: Cuando tenga el acceso a tous ricodeli tengo que realizar estas funciones
     
         #Separamos los almacenes de cancun y cdmx
-        almacen_fisico_cancun = inventarios_almacenes_fisicos_df[inventarios_almacenes_fisicos_df['whscode']=='CDCUN01'] 
-        # print(almacen_fisico_cancun)
+        almacen_fisico_cancun = inventarios_almacenes_fisicos_df[inventarios_almacenes_fisicos_df['whscode']=='CDCUN01'].copy() 
 
-        almacen_fisico_cdmx = inventarios_almacenes_fisicos_df[inventarios_almacenes_fisicos_df['whscode']=='CDMX01'] 
-        # print(almacen_fisico_cdmx)
+        almacen_fisico_cdmx = inventarios_almacenes_fisicos_df[inventarios_almacenes_fisicos_df['whscode']=='CDMX01'].copy() 
 
 
         # Filtrar filas donde 'whscode' contenga "CUN"
-        tiendas_vp_cancun_df = ventas_cierre_mes_df[ventas_cierre_mes_df['whscode'].str.contains('TSCUN', case=False, na=False)]
-        # print(tiendas_cancun.info())
-        # print(tiendas_cancun)
+        tiendas_vp_cancun_df = ventas_cierre_mes_df[ventas_cierre_mes_df['whscode'].str.contains('TSCUN', case=False, na=False)].copy()
 
         # Filtrar filas donde 'whscode' contenga "AICM"
-        tiendas_vp_cdmx_df = ventas_cierre_mes_df[ventas_cierre_mes_df['whscode'].str.contains('TSMX', case=False, na=False)]
-        # print(tiendas_cdmx.info())
-        # print(tiendas_cdmx)
+        tiendas_vp_cdmx_df = ventas_cierre_mes_df[ventas_cierre_mes_df['whscode'].str.contains('TSMX', case=False, na=False)].copy()
 
         #* Separamos en un df las tiendas de cdmx para calcular sus porcentajes de participacion
         # Realizar calculo de porcentaje de participacion en tiendas 
@@ -381,18 +378,21 @@ class ReportService:
         
         # Realizar la reparticion de almacen entre las tiendas
 
-        tiendas_cancun_con_bodega = self.calcularPiezasAlmacenFisico(porcentaje_participacion_venta_cancun, almacen_fisico_cancun)
-        tiendas_cdmx_con_bodega = self.calcularPiezasAlmacenFisico(porcentaje_participacion_venta_cdmx, almacen_fisico_cdmx)
+        tiendas_cancun_con_piezas_almacen = self.calcularPiezasAlmacenFisico(porcentaje_participacion_venta_cancun, almacen_fisico_cancun)
+        tiendas_cdmx_con_piezas_almacen = self.calcularPiezasAlmacenFisico(porcentaje_participacion_venta_cdmx, almacen_fisico_cdmx)
 
+        # Realizar el calculo del mos_almacen de tiendas con almacen fisico
+        tiendas_cancun_df = self.calcularMosAlmacen(tiendas_cancun_con_piezas_almacen)
+        tiendas_cdmx_df = self.calcularMosAlmacen(tiendas_cdmx_con_piezas_almacen)
 
         #* Realizar la fuision entre los tres dfs, el de tijuana, con cancun y cdmx ya con sus almacenes de cun y cdmx
-        ventas_cierre_mes_df = pd.concat([tiendas_tijuana_df, tiendas_cancun_con_bodega,tiendas_cdmx_con_bodega], axis=0, ignore_index=True)
+        ventas_cierre_mes_df = pd.concat([tiendas_tijuana_df, tiendas_cancun_df,tiendas_cdmx_df], ignore_index=True)
+        # Llenamos con 0 los almacenes que no tengan existencia
+        ventas_cierre_mes_df = ventas_cierre_mes_df.fillna(0)
 
         # Renombramos los campos para coincidir con el modelo de respuesta
         ventas_cierre_mes_df.rename(columns={'mos':'mos_tienda'}, inplace=True)
         ventas_cierre_mes_df.rename(columns={'existencia':'existencia_tienda'}, inplace=True)
-        # print(ventas_cierre_mes_df.info())
-        # print(ventas_cierre_mes_df)
 
 
         # print(ventas_cierre_mes_df)
@@ -412,13 +412,13 @@ class ReportService:
         total_variacion_ytd_porcentaje = ((total_ytd_anio_actual_iva / total_ytd_anio_anterior_iva)-1)*100
         total_variacion_ytd_efectivo = total_ytd_anio_actual_iva - total_ytd_anio_anterior_iva
 
-        total_existencia_tiendas = ventas_cierre_mes_df['existencia_tienda'].sum()
+        total_existencia_tiendas = float(ventas_cierre_mes_df['existencia_tienda'].sum())
         total_venta_promedio = float(ventas_cierre_mes_df['venta_promedio'].sum())
         total_mos_tiendas = total_existencia_tiendas/total_venta_promedio
 
-        #! TODO: Calcular el total del mos de bodegas
+
         # Sumamos el total de existencia de bodegas
-        total_existencia_bodegas = 0
+        total_existencia_bodegas = float(ventas_cierre_mes_df['existencias_almacen'].sum())
         total_mos_bodegas = (total_existencia_tiendas + total_existencia_bodegas) / total_venta_promedio
 
         # Calculamos el mos de los almacenes
@@ -450,9 +450,14 @@ class ReportService:
 
     # Funcion para calcular el porcentaje activo de tiendas recibiendo una lista de tiendas con sus ventas promedio
     def calcularPorcentajeDeParticipacionDeVenta(self,tiendas_con_venta_promedio_df:pd.DataFrame):
-        # Cuando tenga acceso a ricodeli calcular el porcentaje activo de venta de estas tienda
-        
-        return
+        # Calculamos la suma de venta promedio de todas las tiendas
+        suma_venta_promedio_tiendas = tiendas_con_venta_promedio_df['venta_promedio'].sum()
+
+        # Calculamos el porcentaje activo de venta de cada tienda
+        tiendas_con_venta_promedio_df['porcentaje_participacion_venta_tienda'] = (
+            (tiendas_con_venta_promedio_df['venta_promedio'] / suma_venta_promedio_tiendas))
+
+        return tiendas_con_venta_promedio_df
     
 
     # Función para calcular las piezas a repartir en base al porcentaje activo de tiendas y existencias de almacenfisico
@@ -467,4 +472,23 @@ class ReportService:
                 pd.DataFrame: Las tiendas con su respectiva cantidad de unidades que le corresponden del almacen.
         """
 
-        return 
+        # Obtenemos el total de las existencias del almacen fisico
+        total_existencias_almacen_fisico = almacen_fisico_df['total_existencias'].iloc[0]
+
+        # Calculamos la cantidad de pzas que le corresponden a cada tienda
+        tiendas_con_participacion_venta['existencias_almacen'] = (
+            total_existencias_almacen_fisico * tiendas_con_participacion_venta['porcentaje_participacion_venta_tienda']
+        )
+
+        return tiendas_con_participacion_venta
+    
+
+    # Funcion para calcular el mos_almacen de las tiendas que cuentan con almacen
+    def calcularMosAlmacen(self, tiendas_con_piezas_almacen_fisico:pd.DataFrame):
+        """Funcion para calcular el mos_almacen de las tiendas con almacen fisico"""
+
+        tiendas_con_piezas_almacen_fisico['mos_almacen'] = (
+            (tiendas_con_piezas_almacen_fisico['existencia'].astype(float) + tiendas_con_piezas_almacen_fisico['existencias_almacen'].astype(float))
+                / tiendas_con_piezas_almacen_fisico['venta_promedio'].astype(float) )
+
+        return tiendas_con_piezas_almacen_fisico

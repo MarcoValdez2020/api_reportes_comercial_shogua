@@ -83,6 +83,7 @@ class InventarioRepository:
         statement = (
             select(
                 InventarioAlmacen.id_almacen.label('id_almacen'),
+                Almacen.whscode.label('whscode'),
                 func.sum(InventarioAlmacen.existencia).label('total_existencias')
             )
             .join(Almacen, InventarioAlmacen.id_almacen == Almacen.id_almacen)  # JOIN entre Almacen e InventarioAlmacen
@@ -91,7 +92,7 @@ class InventarioRepository:
                 Marca.nombre == nombre_marca,  # Filtro por nombre de marca
                 Almacen.whscode.in_(['CDCUN01', 'CDMX01'])  # Filtro para almacenes físicos
             )
-            .group_by(InventarioAlmacen.id_almacen)
+            .group_by(InventarioAlmacen.id_almacen, Almacen.whscode)
         )
     
         
