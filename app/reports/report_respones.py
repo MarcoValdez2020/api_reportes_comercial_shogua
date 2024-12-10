@@ -35,6 +35,9 @@ class FinallyEndMonthReportAGyMumuso(BaseModel):
         total_ytd_anio_actual_iva: float
         total_variacion_ytd_porcentaje: float
         total_variacion_ytd_efectivo:float
+        total_venta_objetivo: float
+        total_variacion_vta_obj_porcentaje: float
+        total_punto_eq: float
         total_existencia: int
         total_mos: float
 

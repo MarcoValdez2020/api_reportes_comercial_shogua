@@ -177,6 +177,9 @@ class ReportService:
             total_ytd_anio_actual_iva=total_ytd_anio_actual_iva,
             total_variacion_ytd_porcentaje=total_variacion_ytd_porcentaje,
             total_variacion_ytd_efectivo=total_variacion_ytd_efectivo,
+            total_venta_objetivo= 0,
+            total_variacion_vta_obj_porcentaje= 0,
+            total_punto_eq= 0,
             total_existencia=total_existencia,
             total_mos=total_mos
         )
