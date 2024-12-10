@@ -14,6 +14,9 @@ class EndMonthReportAGyMumuso(BaseModel):
         ytd_anio_actual_iva: float
         variacion_ytd_porcentaje: float
         variacion_ytd_efectivo:float
+        venta_objetivo: Optional[float] = 0
+        variacion_vta_obj_porcentaje: Optional[float] = 0
+        punto_eq: Optional[float] = 0
         existencia: int
         mos: float
 
