@@ -26,9 +26,6 @@ class Producto(SQLModel, table=True):
     banio: Optional[str] = Field(default=None, max_length=40)
     clasificacion: Optional[str] = Field(default=None, max_length=40)
     ultima_fecha_compra: Optional[date] = Field(default=None)
-    precio_unitario_iva_aeropuerto: Decimal = Field(..., nullable=False, ge=0)
-    precio_unitario_iva_plaza: Decimal = Field(..., ge=0)
-    costo_unitario_iva: Decimal = Field(..., nullable=False, ge=0)
     clave_shogua: Optional[str] = Field(default=None, max_length=60)
 
     # # Relación con la marca (opcional, si deseas acceder a la relación)
@@ -53,8 +50,5 @@ class Producto(SQLModel, table=True):
             'banio': self.banio, 
             'clasificacion': self.clasificacion, 
             'ultima_fecha_compra': self.ultima_fecha_compra, 
-            'precio_unitario_iva_aeropuerto': self.precio_unitario_iva_aeropuerto, 
-            'precio_unitario_iva_plaza': self.precio_unitario_iva_plaza, 
-            'costo_unitario_iva': self.costo_unitario_iva, 
             'clave_shogua': self.clave_shogua 
         }
