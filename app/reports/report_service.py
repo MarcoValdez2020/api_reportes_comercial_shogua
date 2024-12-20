@@ -287,6 +287,10 @@ class ReportService:
         # Obtenemos las ventas promedio de cada tienda
         ventas_promedio_df = self.calcularVentaPromedio(nombre_marca,fecha_fin_mes_anio_actual)
 
+
+        # reporte_cierre_mes = self.fusionar_dataframes_cierre_mes_ag_y_mu(ventas_mes_anterior_df,ventas_mes_actual_df,
+        #                                                                 ventas_ytd_anio_anterior_df,ventas_ytd_anio_actual,
+        #                                                                 tiendas_df,inventarios_tiendas_df, ventas_promedio_df)
         reporte_cierre_mes = self.fusionar_dataframes_cierre_mes_tous(ventas_mes_anterior_df,ventas_mes_actual_df,
                                                                         ventas_ytd_anio_anterior_df,ventas_ytd_anio_actual,
                                                                         tiendas_df,inventarios_tiendas_df, ventas_promedio_df,
@@ -490,9 +494,9 @@ class ReportService:
     # Funcion para calcular el mos_almacen de las tiendas que cuentan con almacen
     def calcularMosAlmacen(self, tiendas_con_piezas_almacen_fisico:pd.DataFrame):
         """Funcion para calcular el mos_almacen de las tiendas con almacen fisico"""
-
-        tiendas_con_piezas_almacen_fisico['mos_almacen'] = (
+    
+        tiendas_con_piezas_almacen_fisico['mos_almacen'] = np.where(tiendas_con_piezas_almacen_fisico['venta_promedio']!=0,
             (tiendas_con_piezas_almacen_fisico['existencia'].astype(float) + tiendas_con_piezas_almacen_fisico['existencias_almacen'].astype(float))
-                / tiendas_con_piezas_almacen_fisico['venta_promedio'].astype(float) )
-
+            / tiendas_con_piezas_almacen_fisico['venta_promedio'].astype(float),0)
+        
         return tiendas_con_piezas_almacen_fisico
