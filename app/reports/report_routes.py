@@ -62,4 +62,21 @@ async def get_month_end_report_tumi(
     except Exception as e:
         print(f"Error en get_month_end_report_tumi: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+# Ruta expuesta para el reporte de cierre de mes de UNODE50
+@router.get("/get-month-end-report-unode50", response_model=FinallyEndMonthReportTous)
+async def get_month_end_report_unode50(
+    nombre_marca:str, 
+    mes:str
+):
+    try:
+        cierre_mes = report_service.get_month_end_report_unode50(nombre_marca, mes)
+        return cierre_mes
+    
+    except ValueError as e:  # Excepción específica de tu lógica de negocio
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        print(f"Error en get_month_end_report_unode50: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     
