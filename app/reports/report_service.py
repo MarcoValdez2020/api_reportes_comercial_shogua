@@ -84,10 +84,16 @@ class ReportService:
 
         # Obtenemos las ventas promedio de cada tienda
         ventas_promedio_df = self.calcularVentaPromedio(nombre_marca,fecha_fin_mes_anio_actual)
+
+        # Obtenemos los presupuestos de cada tienda
+        presupuestos_tiendas = self.shared_service.get_all_store_budgets()
+        # Transformamos a una lista de diccionarios los presupuestos tiendas
+        presupuestos_tiendas_dict_list = [presupuesto.to_dict() for presupuesto in presupuestos_tiendas]
+        presupuestos_tiendas_df = pd.DataFrame(presupuestos_tiendas_dict_list)
         
         reporte_cierre_mes = self.fusionar_dataframes_cierre_mes_ag_y_mu(ventas_mes_anterior_df,ventas_mes_actual_df,
                                                                         ventas_ytd_anio_anterior_df,ventas_ytd_anio_actual,
-                                                                        tiendas_df,inventarios_tiendas_df, ventas_promedio_df)
+                                                                        tiendas_df,inventarios_tiendas_df, ventas_promedio_df, presupuestos_tiendas_df)
             
         return reporte_cierre_mes
     
@@ -95,7 +101,8 @@ class ReportService:
     # Funcion para concatenar el df de cierre de mes ag y mumuso
     def fusionar_dataframes_cierre_mes_ag_y_mu(self, ventas_mes_anterior_df:pd.DataFrame, ventas_mes_actual_df:pd.DataFrame,
                                                 ventas_ytd_anio_anterior_df:pd.DataFrame,ventas_ytd_anio_actual:pd.DataFrame,
-                                                tiendas_df:pd.DataFrame, inventarios_tiendas_df:pd.DataFrame, ventas_promedio_df: pd.DataFrame):
+                                                tiendas_df:pd.DataFrame, inventarios_tiendas_df:pd.DataFrame, ventas_promedio_df: pd.DataFrame,
+                                                presupuestos_tiendas_df:pd.DataFrame):
         
         #Renombrar columnas de cada df
         ventas_mes_anterior_df.rename(columns={"total_venta_neta_con_iva": "venta_mensual_anio_anterior_iva"}, inplace=True)
@@ -108,6 +115,8 @@ class ReportService:
         ventas_mes_actual_df.drop(columns=['mes'], inplace=True)
         ventas_ytd_anio_anterior_df.drop(columns=['anio'], inplace=True)
         ventas_ytd_anio_actual.drop(columns=['anio'], inplace=True)
+        presupuestos_tiendas_df.drop(columns=['fecha','id_presupuesto_tienda'], inplace=True)
+
         # Fusionar mes con mes
         ventas_mes_df = pd.merge(ventas_mes_anterior_df,ventas_mes_actual_df, on='whscode', how='outer')
 
@@ -116,6 +125,10 @@ class ReportService:
 
         # Fusionar meses con el ytd
         ventas_cierre_mes_df = pd.merge(ventas_mes_df,ventas_ytd_df, on='whscode', how='outer')
+
+        # Fusionar con presupuesto de tienda
+        ventas_cierre_mes_df = pd.merge(ventas_cierre_mes_df, presupuestos_tiendas_df, on='whscode', how='left')
+
 
         # Calcular las variaciones
         ventas_cierre_mes_df = ventas_cierre_mes_df.fillna(0)
@@ -131,6 +144,10 @@ class ReportService:
         ventas_cierre_mes_df['variacion_ytd_efectivo']  =   ventas_cierre_mes_df['ytd_anio_actual_iva'] - ventas_cierre_mes_df['ytd_anio_anterior_iva']
 
 
+        ventas_cierre_mes_df['variacion_vta_obj_porcentaje'] = np.where(ventas_cierre_mes_df['venta_objetivo'] != 0,
+                                            (((ventas_cierre_mes_df['venta_mensual_anio_actual_iva'] / ventas_cierre_mes_df['venta_objetivo']) - 1))*100,0)
+        
+
         # Hacer el merge con los inventarios
         ventas_cierre_mes_df = pd.merge(ventas_cierre_mes_df,inventarios_tiendas_df, on='whscode', how='outer')
 
@@ -144,7 +161,7 @@ class ReportService:
 
         # Llenamos con 0 las existencias que no tengan coincidencia
         ventas_cierre_mes_df= ventas_cierre_mes_df.fillna(0)
-        
+
         # print(ventas_cierre_mes_df)
         # Crear una lista de objetos EndMonthReportAGyMumuso a partir del DataFrame
         list_of_reports = [
@@ -162,6 +179,14 @@ class ReportService:
         total_variacion_ytd_porcentaje = ((total_ytd_anio_actual_iva / total_ytd_anio_anterior_iva)-1)*100
         total_variacion_ytd_efectivo = total_ytd_anio_actual_iva - total_ytd_anio_anterior_iva
 
+        total_venta_objetivo = ventas_cierre_mes_df['venta_objetivo'].sum()
+        if total_venta_objetivo == 0:
+            total_variacion_vta_obj_porcentaje = 0
+        else:
+            total_variacion_vta_obj_porcentaje = ((total_venta_mensual_anio_actual_iva / total_venta_objetivo)-1)*100
+    
+        total_punto_equilibrio = ventas_cierre_mes_df['punto_equilibrio'].sum()
+
         total_existencia = ventas_cierre_mes_df['existencia'].sum()
         total_venta_promedio = float(ventas_cierre_mes_df['venta_promedio'].sum())
         total_mos = total_existencia/total_venta_promedio
@@ -177,9 +202,9 @@ class ReportService:
             total_ytd_anio_actual_iva=total_ytd_anio_actual_iva,
             total_variacion_ytd_porcentaje=total_variacion_ytd_porcentaje,
             total_variacion_ytd_efectivo=total_variacion_ytd_efectivo,
-            total_venta_objetivo= 0,
-            total_variacion_vta_obj_porcentaje= 0,
-            total_punto_eq= 0,
+            total_venta_objetivo= total_venta_objetivo,
+            total_variacion_vta_obj_porcentaje= total_variacion_vta_obj_porcentaje,
+            total_punto_equilibrio= total_punto_equilibrio,
             total_existencia=total_existencia,
             total_mos=total_mos
         )

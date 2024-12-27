@@ -1,4 +1,5 @@
 
+from datetime import date
 from typing import Optional
 from sqlmodel import Field, SQLModel, Relationship
 from shared.enums import GiroMarca, TipoTienda, EstadoOperativo, Comparabilidad, SistemaERP
@@ -61,3 +62,21 @@ class Almacen(SQLModel, table=True):
     # Relación con la marca
     marca: 'Marca' = Relationship(back_populates='almacenes')
 
+
+class PresupuestoTienda(SQLModel, table=True):
+    __tablename__ = 'presupuesto_tienda'
+
+    id_presupuesto_tienda: str = Field(primary_key=True)
+    whscode: str = Field(foreign_key='tienda.whscode', nullable=False)
+    venta_objetivo: float = Field(nullable=False)
+    punto_equilibrio: float = Field(nullable=False)
+    fecha: date = Field(nullable=False)
+
+    def to_dict(self):
+        return {
+            'id_presupuesto_tienda':self.id_presupuesto_tienda,
+            'whscode':self.whscode,
+            'venta_objetivo':self.venta_objetivo,
+            'punto_equilibrio':self.punto_equilibrio,
+            'fecha':self.fecha,
+        }

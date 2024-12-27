@@ -2,7 +2,7 @@ from core.unit_of_work import UnitOfWork
 from typing import List, Optional
 from fastapi import HTTPException
 
-from shared.shared_schemas import Marca, Tienda, Almacen
+from shared.shared_schemas import Marca, Tienda, Almacen, PresupuestoTienda
 
 class SharedService:
     def __init__(self):
@@ -31,3 +31,14 @@ class SharedService:
                         print(f"Error al obtener tiendas: {e}")
                         raise HTTPException(status_code=500, detail="Error al obtener marcas")
     
+
+    def get_all_store_budgets(self) -> List[PresupuestoTienda]:
+        """Obtener todos los presupuestos de tienda de la base de datos."""
+        with UnitOfWork() as uow:
+            # Obtener todos registros
+            try:
+                return uow.shared_repository.get_all_store_budgets()
+            except Exception as e:
+                    # Log de la excepción para saber el error
+                    print(f"Error al obtener presupuestos de tienda: {e}")
+                    raise HTTPException(status_code=500, detail="Error al obtener presupuestos de tienda")

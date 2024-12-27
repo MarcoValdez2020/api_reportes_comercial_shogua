@@ -16,7 +16,7 @@ class EndMonthReportAGyMumuso(BaseModel):
         variacion_ytd_efectivo:float
         venta_objetivo: Optional[float] = 0
         variacion_vta_obj_porcentaje: Optional[float] = 0
-        punto_eq: Optional[float] = 0
+        punto_equilibrio: Optional[float] = 0
         existencia: int
         mos: float
 
@@ -40,7 +40,7 @@ class FinallyEndMonthReportAGyMumuso(BaseModel):
         total_variacion_ytd_efectivo:float
         total_venta_objetivo: float
         total_variacion_vta_obj_porcentaje: float
-        total_punto_eq: float
+        total_punto_equilibrio: float
         total_existencia: int
         total_mos: float
 

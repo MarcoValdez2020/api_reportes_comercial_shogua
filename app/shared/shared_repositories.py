@@ -3,7 +3,7 @@ from datetime import date
 from sqlalchemy import func
 from typing import List,Tuple
 
-from shared.shared_schemas import Marca, Tienda, Almacen
+from shared.shared_schemas import Marca, Tienda, Almacen, PresupuestoTienda
 
 
 class SharedRepository:
@@ -36,3 +36,9 @@ class SharedRepository:
     
     
     #? Funciones de los almacenes
+
+    #? Funciones de los presupuestos de tienda
+    def get_all_store_budgets(self) -> list[PresupuestoTienda]:
+        statement = select(PresupuestoTienda)
+        result = self.session.exec(statement)
+        return result.all()
