@@ -58,6 +58,11 @@ class StoresEndMonthReportTous(BaseModel):
         ytd_anio_actual_iva: float
         variacion_ytd_porcentaje: float
         variacion_ytd_efectivo:float
+        
+        venta_objetivo: Optional[float] = 0
+        variacion_vta_obj_porcentaje: Optional[float] = 0
+        punto_equilibrio: Optional[float] = 0
+        
         existencia_tienda: int
         mos_tienda: float
         meses_con_venta: int
@@ -88,6 +93,9 @@ class FinallyEndMonthReportTous(BaseModel):
         total_ytd_anio_actual_iva: float
         total_variacion_ytd_porcentaje: float
         total_variacion_ytd_efectivo:float
+        total_venta_objetivo: float
+        total_variacion_vta_obj_porcentaje: float
+        total_punto_equilibrio: float
         total_existencia_tiendas: int
         total_mos_tiendas: float
 
@@ -107,6 +115,11 @@ class StoresEndMonthReportPenguin(BaseModel):
         ytd_anio_actual_iva: float
         variacion_ytd_porcentaje: float
         variacion_ytd_efectivo:float
+
+        venta_objetivo: Optional[float] = 0
+        variacion_vta_obj_porcentaje: Optional[float] = 0
+        punto_equilibrio: Optional[float] = 0
+
         existencia_tienda: int
         mos_tienda: float
         meses_con_venta: int
@@ -133,6 +146,11 @@ class FinallyEndMonthReportPenguin(BaseModel):
         total_ytd_anio_actual_iva: float
         total_variacion_ytd_porcentaje: float
         total_variacion_ytd_efectivo:float
+
+        total_venta_objetivo: float
+        total_variacion_vta_obj_porcentaje: float
+        total_punto_equilibrio: float
+        
         total_existencia_tiendas: int
         total_mos_tiendas: float
 
