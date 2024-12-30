@@ -1117,7 +1117,7 @@ class ReportService:
         inventarios_tiendas_df['whscode'] = inventarios_tiendas_df['whscode'].replace({'PENGDLCO': 'PENGDL01'})
         # Agrupamos por whscode
         inventarios_tiendas_df = inventarios_tiendas_df.groupby('whscode').agg({'existencia':'sum'}).reset_index()
-        
+
         # Obtener la suma de stock de los almacenes virtuales
         inventarios_almacenes_virtuales = self.inventario_service.get_virtual_warehouses_inventories_total_stock_by_brand_name(nombre_marca)
         suma_stock_almacenes_virtuales = inventarios_almacenes_virtuales[0]
@@ -1148,7 +1148,7 @@ class ReportService:
         ventas_mes_anio_actual= self.venta_service.get_sales_grouped_by_month_and_whscode(nombre_marca, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual)
         ventas_mes_dict_anio_actual = self.venta_service.transform_sales_gropued_by_month(ventas_mes_anio_actual)
         ventas_mes_actual_df = pd.DataFrame(ventas_mes_dict_anio_actual)
-
+        
         # Fusionamos los dos penguin
         ventas_mes_actual_df['whscode'] = ventas_mes_actual_df['whscode'].replace({'PENGDLCO': 'PENGDL01'})
         # Agrupamos por whscode
@@ -1159,7 +1159,14 @@ class ReportService:
         # Obtener las ventas solamente del mes pero del año anterior
         ventas_mes_anio_anterior= self.venta_service.get_sales_grouped_by_month_and_whscode(nombre_marca, fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior)
         ventas_mes_dict_anio_anterior = self.venta_service.transform_sales_gropued_by_month(ventas_mes_anio_anterior)
-        ventas_mes_anterior_df = pd.DataFrame(ventas_mes_dict_anio_anterior)
+        ventas_mes_anterior_df = pd.DataFrame(ventas_mes_dict_anio_anterior, columns=['mes','whscode','total_venta_neta_con_iva'])
+        
+        if ventas_mes_anterior_df.empty:
+            # Diccionario con los datos de la fila
+            fila_vacia = {'mes':fecha_inicio_mes_anio_anterior, 'whscode':'PENGDL01', 'total_venta_neta_con_iva': 0}
+            
+            # Agregar la fila al DataFrame
+            ventas_mes_anterior_df = pd.concat([ventas_mes_anterior_df, pd.DataFrame([fila_vacia])], ignore_index=True)
 
         # Fusionamos los dos penguin
         ventas_mes_anterior_df['whscode'] = ventas_mes_anterior_df['whscode'].replace({'PENGDLCO': 'PENGDL01'})
@@ -1177,6 +1184,13 @@ class ReportService:
         ventas_ytd_dict_anio_anterior = self.venta_service.transform_sales_gropued_by_year(ventas_ytd_anio_anterior)
         ventas_ytd_anio_anterior_df = pd.DataFrame(ventas_ytd_dict_anio_anterior)
 
+        if ventas_ytd_anio_anterior_df.empty:
+            # Diccionario con los datos de la fila
+            fila_vacia = {'anio':fecha_inicio_anio_anterior, 'whscode':'PENGDL01', 'total_venta_neta_con_iva': 0}
+            
+            # Agregar la fila al DataFrame
+            ventas_ytd_anio_anterior_df = pd.concat([ventas_ytd_anio_anterior_df, pd.DataFrame([fila_vacia])], ignore_index=True)
+        
         # Fusionamos los dos penguin
         ventas_ytd_anio_anterior_df['whscode'] = ventas_ytd_anio_anterior_df['whscode'].replace({'PENGDLCO': 'PENGDL01'})
         # Agrupamos por whscode
@@ -1303,12 +1317,22 @@ class ReportService:
         # Formar el totales del reporte final
         total_venta_mensual_anio_anterior_iva = ventas_cierre_mes_df['venta_mensual_anio_anterior_iva'].sum()
         total_venta_mensual_anio_actual_iva = ventas_cierre_mes_df['venta_mensual_anio_actual_iva'].sum()
-        total_variacion_mes_porcentaje = ((total_venta_mensual_anio_actual_iva / total_venta_mensual_anio_anterior_iva)-1)*100
+        
+        if total_venta_mensual_anio_anterior_iva!=0:
+            total_variacion_mes_porcentaje = ((total_venta_mensual_anio_actual_iva / total_venta_mensual_anio_anterior_iva)-1)*100
+        else:
+            total_variacion_mes_porcentaje = 0
+
         total_variacion_mes_efectivo = total_venta_mensual_anio_actual_iva - total_venta_mensual_anio_anterior_iva
 
         total_ytd_anio_anterior_iva = ventas_cierre_mes_df['ytd_anio_anterior_iva'].sum()
         total_ytd_anio_actual_iva = ventas_cierre_mes_df['ytd_anio_actual_iva'].sum()
-        total_variacion_ytd_porcentaje = ((total_ytd_anio_actual_iva / total_ytd_anio_anterior_iva)-1)*100
+
+        if total_ytd_anio_anterior_iva!=0:
+            total_variacion_ytd_porcentaje = ((total_ytd_anio_actual_iva / total_ytd_anio_anterior_iva)-1)*100
+        else: 
+            total_variacion_ytd_porcentaje = 0
+            
         total_variacion_ytd_efectivo = total_ytd_anio_actual_iva - total_ytd_anio_anterior_iva
 
         total_venta_objetivo = ventas_cierre_mes_df['venta_objetivo'].sum()
