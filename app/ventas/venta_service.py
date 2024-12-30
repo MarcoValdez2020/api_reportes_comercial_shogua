@@ -120,6 +120,35 @@ class VentaService:
                         # Log de la excepción para saber el error
                         print(f"Error al obtener registros: {e}")
 
+    def getAvailableSalesYears(self, nombre_marca:str) -> List[int]:
+        """Obtener los años en que una marca tiene ventas registradas"""
+        with UnitOfWork() as uow:
+            # Intenta la operacion en la bd
+            try:
+                data = uow.venta_repository.get_years_with_sales_by_brand_name(nombre_marca)
+                # Diccionario para convertir números de mes a nombres de mes
+                meses_dict = {
+                    1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio',
+                    7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+                }
+
+                # Convertir los números de mes a nombres de mes y estructurar la respuesta
+                response = []
+                for anio, meses in data:
+                    # Convertir los números de mes flotantes a enteros y luego a nombres
+                    meses_con_nombres = {int(mes): meses_dict.get(int(mes)) for mes in set(meses)}
+                    response.append({
+                        'anio': int(anio),
+                        'meses_venta': meses_con_nombres
+                    })
+                
+                return response
+
+            except Exception as e:
+                    # Log de la excepción para saber el error
+                    print(f"Error al obtener registros: {e}")
+                    raise HTTPException(status_code=500, detail="Error al obtener registros")
+
 
     #? Funciones para trabajar con datos
 

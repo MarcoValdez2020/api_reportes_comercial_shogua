@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import date
-from typing import List
+from typing import Dict
 from decimal import Decimal
 
 # Definir el modelo de respuesta para ventas agrupadas por mes-tienda
@@ -20,3 +20,9 @@ class FirstAndLastSaleDate(BaseModel):
     marca:str
     primera_fecha_venta: date
     ultima_fecha_venta: date
+
+
+class YearsWithSalesResponse(BaseModel):
+    anio: int
+    meses_venta: Dict[str, str]
+

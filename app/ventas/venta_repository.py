@@ -134,3 +134,24 @@ class VentaRepository:
         except Exception as e:
             print(f'Fallo al obtener la primera y ultima fecha de marca: {e}')
             return []
+        
+    # Funcion para obtener los años con ventas de una marca
+    def get_years_with_sales_by_brand_name(self, nombre_marca: str):  
+        # Subconsulta con JOINs y filtros para obtener la suma y el promedio mensual
+        statement = (
+            select(
+                func.date_part('year', Venta.fecha).label('anio'),
+                func.array_agg(distinct(func.date_part('month', Venta.fecha))).label('meses_con_venta')
+            )
+            .join(Tienda, Venta.whscode == Tienda.whscode)  # JOIN entre venta y tienda
+            .join(Marca, Tienda.id_marca == Marca.id_marca)  # JOIN entre tienda y marca
+            .where(Marca.nombre == nombre_marca)  # Filtro por el nombre de la marca
+            .group_by(func.date_part('year', Venta.fecha))  # Agrupar por el año
+        )
+
+        try:
+            result = self.session.exec(statement)
+            return result.fetchall()
+        except Exception as e:
+            print(f'Fallo al obtener los años con ventas de una marca: {e}')
+            return []

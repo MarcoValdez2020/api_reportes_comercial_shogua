@@ -3,7 +3,7 @@ from datetime import date
 
 from ventas.venta_schemas import Venta
 from ventas.venta_service import VentaService
-from ventas.ventas_responses import FirstAndLastSaleDate, MonthlySalesResponse, YearlySalesResponse
+from ventas.ventas_responses import FirstAndLastSaleDate, MonthlySalesResponse, YearlySalesResponse, YearsWithSalesResponse
 
 router = APIRouter()
 ventas_service = VentaService()
@@ -65,6 +65,19 @@ async def get_first_and_last_sale_date_by_brand_name(
     try:
         ultima_y_primera_fecha_venta = ventas_service.get_first_and_last_sale_date_by_brand_name(nombre_marca)
         return ultima_y_primera_fecha_venta
+    except Exception as e:
+        print(f"Error en get_sales_grouped_by_year_and_whscode: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+    
+
+@router.get("/get-sales-available-years-by-brand-name",response_model=list[YearsWithSalesResponse])
+async def get_first_and_last_sale_date_by_brand_name(
+    nombre_marca:str,
+):
+    try:
+        anios_disponibles_ventas_marca = ventas_service.getAvailableSalesYears(nombre_marca)
+
+        return anios_disponibles_ventas_marca
     except Exception as e:
         print(f"Error en get_sales_grouped_by_year_and_whscode: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
