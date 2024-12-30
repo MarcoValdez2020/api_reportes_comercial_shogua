@@ -24,5 +24,5 @@ class FirstAndLastSaleDate(BaseModel):
 
 class YearsWithSalesResponse(BaseModel):
     anio: int
-    meses_venta: Dict[str, str]
+    meses_venta: Dict[int, str]
 
