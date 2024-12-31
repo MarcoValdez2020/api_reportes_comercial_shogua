@@ -70,7 +70,7 @@ async def get_first_and_last_sale_date_by_brand_name(
         raise HTTPException(status_code=500, detail="Error interno del servidor")
     
 
-@router.get("/get-sales-available-years-by-brand-name",response_model=list[YearsWithSalesResponse])
+@router.get("/get-sales-available-years-by-brand-name", response_model=list[YearsWithSalesResponse])
 async def get_first_and_last_sale_date_by_brand_name(
     nombre_marca:str,
 ):

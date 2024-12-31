@@ -136,7 +136,7 @@ class VentaService:
                 response = []
                 for anio, meses in data:
                     # Convertir los números de mes flotantes a enteros y luego a nombres
-                    meses_con_nombres = {int(mes): meses_dict.get(int(mes)) for mes in set(meses)}
+                    meses_con_nombres = [{'index':int(mes),'name': meses_dict.get(int(mes))} for mes in set(meses)]
                     response.append({
                         'anio': int(anio),
                         'meses_venta': meses_con_nombres
