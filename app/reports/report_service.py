@@ -1139,8 +1139,12 @@ class ReportService:
         suma_stock_almacenes_virtuales = inventarios_almacenes_virtuales[0]
 
         # Obtener todas las ventas de inicio a fin del mes seleccionado
-        anio_actual = date.today().year
-        anio_anterior = date.today().year-1
+        if anio:
+            anio_actual = anio
+        else:
+            anio_actual = date.today().year
+    
+        anio_anterior = anio_actual-1
 
         meses_dict = {
                 'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4,
