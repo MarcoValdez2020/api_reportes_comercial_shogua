@@ -20,7 +20,7 @@ class ReportService:
         pass
 
     # Funcion para obtener el reporte de cierre de mes de Ay Güey y mumuso
-    def get_month_end_report_ag_y_mu(self,nombre_marca:str, mes:str):
+    def get_month_end_report_ag_y_mu(self,nombre_marca:str, mes:str, anio:int):
         """Metodo para obtener los datos de cierre de mes de las marcas Ay Güey y Mumuso"""
 
         # Obtener registros de las tiendas por marca y transformalo en df
@@ -34,8 +34,12 @@ class ReportService:
 
 
         # Obtener todas las ventas de inicio a fin del mes seleccionado
-        anio_actual = date.today().year
-        anio_anterior = date.today().year-1
+        if anio:
+            anio_actual = anio
+        else:
+            anio_actual = date.today().year
+    
+        anio_anterior = anio_actual-1
 
         meses_dict = {
                 'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4,
@@ -226,7 +230,7 @@ class ReportService:
     
 
     # Funcion para obtener el reporte de cierre de mes de tous
-    def get_month_end_report_tous_hm_y_ricodeli(self, nombre_marca:str, mes:str):
+    def get_month_end_report_tous_hm_y_ricodeli(self, nombre_marca:str, mes:str, anio:int):
         """Metodo para obtener los datos de cierre de mes de Tous Hetal Mevy y Ricodeli"""
         # print(f'mes: {mes}')
         # Obtener registros de las tiendas por marca y transformalo en df
@@ -261,8 +265,12 @@ class ReportService:
 
 
         # Obtener todas las ventas de inicio a fin del mes seleccionado
-        anio_actual = date.today().year
-        anio_anterior = date.today().year-1
+        if anio:
+            anio_actual = anio
+        else:
+            anio_actual = date.today().year
+    
+        anio_anterior = anio_actual-1
 
         meses_dict = {
                 'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4,
@@ -558,7 +566,7 @@ class ReportService:
     
 
     # Funcion para obtener el reporte de cierre de mes de tumi
-    def get_month_end_report_tumi(self, nombre_marca:str, mes:str):
+    def get_month_end_report_tumi(self, nombre_marca:str, mes:str, anio:int):
         """Metodo para obtener los datos de cierre de mes de Tous Hetal Mevy y Ricodeli"""
         # print(f'mes: {mes}')
         # Obtener registros de las tiendas por marca y transformalo en df
@@ -593,8 +601,12 @@ class ReportService:
 
 
         # Obtener todas las ventas de inicio a fin del mes seleccionado
-        anio_actual = date.today().year
-        anio_anterior = date.today().year-1
+        if anio:
+            anio_actual = anio
+        else:
+            anio_actual = date.today().year
+    
+        anio_anterior = anio_actual-1
 
         meses_dict = {
                 'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4,
@@ -831,7 +843,7 @@ class ReportService:
     
 
     # Funcion para obtener el reporte de cierre de mes de 
-    def get_month_end_report_unode50(self, nombre_marca:str, mes:str):
+    def get_month_end_report_unode50(self, nombre_marca:str, mes:str, anio:int):
         """Metodo para obtener los datos de cierre de mes de Tous Hetal Mevy y Ricodeli"""
         # print(f'mes: {mes}')
         # Obtener registros de las tiendas por marca y transformalo en df
@@ -865,8 +877,12 @@ class ReportService:
 
 
         # Obtener todas las ventas de inicio a fin del mes seleccionado
-        anio_actual = date.today().year
-        anio_anterior = date.today().year-1
+        if anio:
+            anio_actual = anio
+        else:
+            anio_actual = date.today().year
+    
+        anio_anterior = anio_actual-1
 
         meses_dict = {
                 'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4,
@@ -1097,7 +1113,7 @@ class ReportService:
     
     
     # Funcion para obtener el reporte de cierre de mes de 
-    def get_month_end_report_penguin(self, nombre_marca:str, mes:str):
+    def get_month_end_report_penguin(self, nombre_marca:str, mes:str, anio:int):
         """Metodo para obtener los datos de cierre de mes de Penguin"""
         # print(f'mes: {mes}')
         # Obtener registros de las tiendas por marca y transformalo en df

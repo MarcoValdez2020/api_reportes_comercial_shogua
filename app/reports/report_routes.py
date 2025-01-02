@@ -20,10 +20,11 @@ report_service = ReportService(shared_service, ventas_service, inventario_servic
 @router.get("/get-month-end-report-ag-y-mu", response_model=FinallyEndMonthReportAGyMumuso)
 async def get_month_end_report_ag_y_mu(
     nombre_marca:str, 
-    mes:str
+    mes:str,
+    anio:int
 ):
     try:
-        cierre_mes = report_service.get_month_end_report_ag_y_mu(nombre_marca, mes)
+        cierre_mes = report_service.get_month_end_report_ag_y_mu(nombre_marca, mes, anio)
         return cierre_mes
     except Exception as e:
         print(f"Error en get_month_end_report_ag_y_mu: {e}")
@@ -34,10 +35,11 @@ async def get_month_end_report_ag_y_mu(
 @router.get("/get-month-end-report-tous", response_model=FinallyEndMonthReportTous)
 async def get_month_end_report_tous_hm_y_ricodeli(
     nombre_marca:str, 
-    mes:str
+    mes:str,
+    anio:int
 ):
     try:
-        cierre_mes = report_service.get_month_end_report_tous_hm_y_ricodeli(nombre_marca, mes)
+        cierre_mes = report_service.get_month_end_report_tous_hm_y_ricodeli(nombre_marca, mes, anio)
         return cierre_mes
     
     except ValueError as e:  # Excepción específica de tu lógica de negocio
@@ -51,10 +53,11 @@ async def get_month_end_report_tous_hm_y_ricodeli(
 @router.get("/get-month-end-report-tumi", response_model=FinallyEndMonthReportTous)
 async def get_month_end_report_tumi(
     nombre_marca:str, 
-    mes:str
+    mes:str,
+    anio:int
 ):
     try:
-        cierre_mes = report_service.get_month_end_report_tumi(nombre_marca, mes)
+        cierre_mes = report_service.get_month_end_report_tumi(nombre_marca, mes, anio)
         return cierre_mes
     
     except ValueError as e:  # Excepción específica de tu lógica de negocio
@@ -68,10 +71,11 @@ async def get_month_end_report_tumi(
 @router.get("/get-month-end-report-unode50", response_model=FinallyEndMonthReportTous)
 async def get_month_end_report_unode50(
     nombre_marca:str, 
-    mes:str
+    mes:str,
+    anio: int
 ):
     try:
-        cierre_mes = report_service.get_month_end_report_unode50(nombre_marca, mes)
+        cierre_mes = report_service.get_month_end_report_unode50(nombre_marca, mes, anio)
         return cierre_mes
     
     except ValueError as e:  # Excepción específica de tu lógica de negocio
@@ -85,10 +89,11 @@ async def get_month_end_report_unode50(
 @router.get("/get-month-end-report-penguin", response_model=FinallyEndMonthReportPenguin)
 async def get_month_end_report_penguin(
     nombre_marca:str, 
-    mes:str
+    mes:str,
+    anio: int
 ):
     try:
-        cierre_mes = report_service.get_month_end_report_penguin(nombre_marca, mes)
+        cierre_mes = report_service.get_month_end_report_penguin(nombre_marca, mes, anio)
         return cierre_mes
     
     except ValueError as e:  # Excepción específica de tu lógica de negocio
