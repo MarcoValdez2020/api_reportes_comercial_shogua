@@ -1,4 +1,5 @@
 from sqlmodel import Session,select
+from sqlalchemy import text
 from sqlalchemy import func
 from datetime import date
 from typing import List,Tuple
@@ -129,6 +130,39 @@ class InventarioRepository:
             return result.all()        
         except Exception as e:
             print(f'Fallo al obtener las agrupadas: {e}')
+            return []
+    
+    # Funcion para obtener una lista con las fechas de historial de inventarios de cierres de mes disponibles    
+    def get_end_month_history_inventory_list(self, nombre_marca: str):
+        """Funcion para obtener la lista de los inventarios de cierre de mes disponibles"""
+        # SQL crudo para la consulta
+        sql = """
+            WITH cierres_validos AS (
+                SELECT 
+                    DATE_PART('year', hi.fecha - INTERVAL '1 month') AS anio, -- Asociar con el mes anterior
+                    DATE_PART('month', hi.fecha - INTERVAL '1 month') AS mes -- Asociar con el mes anterior
+                FROM historial_inventario_tienda hi
+                JOIN tienda t ON hi.whscode = t.whscode -- Relacionamos con la tabla tienda
+                JOIN marca m ON t.id_marca = m.id_marca -- Añadimos el JOIN con la tabla marca
+                WHERE 
+                    DATE_PART('day', hi.fecha) = 1 -- Solo considerar días 1
+                    AND m.nombre = :nombre_marca -- Filtrar por el nombre de la marca
+                GROUP BY DATE_PART('year', hi.fecha - INTERVAL '1 month'), DATE_PART('month', hi.fecha - INTERVAL '1 month')
+            )
+            SELECT 
+                anio,
+                ARRAY_AGG(TO_CHAR(TO_DATE(mes::TEXT, 'MM'), 'TMMonth')) AS inventarios
+            FROM cierres_validos
+            GROUP BY anio
+            ORDER BY anio;
+        """
+
+        try:
+            # Ejecutamos el SQL crudo pasando el parámetro de manera segura
+            result = self.session.exec(text(sql), params={'nombre_marca': nombre_marca})
+            return result.fetchall()
+        except Exception as e:
+            print(f'Fallo al obtener los años con inventarios de una marca: {e}')
             return []
 
     #? Funciones para historial inventario de almacen

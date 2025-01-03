@@ -7,6 +7,7 @@ from productos.producto_routes import router as product_router  # Importa el rou
 from ventas.venta_routes import router as ventas_router  # Importa el router del submódulo ventas
 from reports.report_routes import router as reports_router # Importar el router del submódulo reportes
 from shared.shared_routes import router as shared_router # Importar el router del submódulo reportes
+from inventarios.inventario_routes import router as inventario_router  # Importa el router del submódulo inventarios
 
 
 app = FastAPI()
@@ -48,3 +49,4 @@ app.include_router(product_router, prefix="/productos", tags=["Productos"])
 app.include_router(ventas_router, prefix="/ventas", tags=["Ventas"])
 app.include_router(reports_router, prefix="/reportes", tags=["Reportes"])
 app.include_router(shared_router, prefix="/shared", tags=["Shared"])
+app.include_router(inventario_router, prefix="/inventarios", tags=["Inventarios"])

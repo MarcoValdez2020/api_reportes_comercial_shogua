@@ -103,3 +103,30 @@ class InventarioService:
             except Exception as e:
                     # Log de la excepción para saber el error
                     print(f"Error al obtener registros: {e}")
+
+    # Funcion para obtener los años con inventarios de cierre de mes disponibles
+    def get_end_month_history_inventory_list(self, nombre_marca:str):
+        """Funcion para obtener la lista de los inventarios de cierre de mes disponibles"""
+        with UnitOfWork() as uow:
+            # Intenta la operacion en la bd
+            try:
+                # Diccionario para convertir números de mes a nombres de mes
+                meses_dict = {
+                    1: 'Enero', 2: 'Febrero', 3: 'Marzo', 'Abril':4, 5: 'Mayo', 6: 'Junio',
+                    7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+                }
+                response = []
+                data = uow.inventario_repository.get_end_month_history_inventory_list(nombre_marca)
+                for anio, meses in data:
+                    for mes in meses:
+                        meses_con_nombres = [{'index':meses_dict.get(mes),'name': mes} for mes in set(meses)]
+                        response.append({
+                            'anio': int(anio),
+                            'inventario_cierre': meses_con_nombres
+                        })
+                
+                return response
+                # Convertir los resultados a un DataFrame de Pandas                
+            except Exception as e:
+                    # Log de la excepción para saber el error
+                    print(f"Error al obtener registros: {e}")
