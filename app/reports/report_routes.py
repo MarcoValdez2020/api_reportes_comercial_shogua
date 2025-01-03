@@ -21,10 +21,11 @@ report_service = ReportService(shared_service, ventas_service, inventario_servic
 async def get_month_end_report_ag_y_mu(
     nombre_marca:str, 
     mes:str,
-    anio:int
+    anio:int,
+    tipo_inventario:str
 ):
     try:
-        cierre_mes = report_service.get_month_end_report_ag_y_mu(nombre_marca, mes, anio)
+        cierre_mes = report_service.get_month_end_report_ag_y_mu(nombre_marca, mes, anio, tipo_inventario)
         return cierre_mes
     except Exception as e:
         print(f"Error en get_month_end_report_ag_y_mu: {e}")

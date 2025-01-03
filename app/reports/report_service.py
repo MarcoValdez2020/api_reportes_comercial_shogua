@@ -20,7 +20,7 @@ class ReportService:
         pass
 
     # Funcion para obtener el reporte de cierre de mes de Ay Güey y mumuso
-    def get_month_end_report_ag_y_mu(self,nombre_marca:str, mes:str, anio:int):
+    def get_month_end_report_ag_y_mu(self,nombre_marca:str, mes:str, anio:int, tipo_inventario:str):
         """Metodo para obtener los datos de cierre de mes de las marcas Ay Güey y Mumuso"""
 
         # Obtener registros de las tiendas por marca y transformalo en df
@@ -28,7 +28,16 @@ class ReportService:
         tiendas_df = pd.DataFrame(tiendas)
 
         # Obtener los inventarios de todas las tiendas
-        inventarios_tiendas = self.inventario_service.get_store_inventories_total_stock_by_brand_name(nombre_marca)
+        # Si el tipo de inventario es 'actual', entonces traemos los inventario de tiendas actuales, pero si es 'cierre-mes' entonces llamamos al historial del inventario del mes seleccionado
+        if tipo_inventario == 'actual':
+            inventarios_tiendas = self.inventario_service.get_store_inventories_total_stock_by_brand_name(nombre_marca)
+        elif tipo_inventario == 'cierre-mes':
+            inventarios_tiendas = self.inventario_service.get_store_inventories_total_stock_by_brand_name_and_month(nombre_marca, mes, anio)
+            # Evaluamos que se tenga el inventario con la fecha especificada, si no se retorno nada entonces usar el cierre de mes mas cercano
+            # TODO: Crear un método para obtener una lista con los inventarios de cierre de mes disponibles
+        else:
+            raise ValueError("El tipo de inventario no es válido")
+        
         inventarios_tiendas_dict = self.inventario_service.transform_store_inventories_total_stock(inventarios_tiendas)
         inventarios_tiendas_df = pd.DataFrame(inventarios_tiendas_dict)
 

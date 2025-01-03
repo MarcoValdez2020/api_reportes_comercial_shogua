@@ -1,7 +1,8 @@
 from sqlmodel import Session,select
 from sqlalchemy import func
+from datetime import date
 from typing import List,Tuple
-from inventarios.inventario_schemas import InventarioTienda, InventarioAlmacen
+from inventarios.inventario_schemas import InventarioTienda, InventarioAlmacen, HistorialInventarioTienda
 from shared.shared_schemas import Marca, Tienda, Almacen
 
 
@@ -108,6 +109,27 @@ class InventarioRepository:
 
 
     #? Funciones para historial inventario de tienda
+    def get_history_store_inventories_total_stock_by_brand_name(self, nombre_marca:str, fecha:date) -> List[Tuple[str, int]]:
+        # Realizar la consulta utilizando SQLAlchemy (funciones como DATE_TRUNC)
+        statement = (
+            select(
+                HistorialInventarioTienda.whscode.label('whscode'),  # Agrupación por whscode
+                func.sum(HistorialInventarioTienda.existencia).label('total_existencias')
+            )
+            .join(Tienda, HistorialInventarioTienda.whscode == Tienda.whscode)  # JOIN entre Tienda e InventarioTienda
+            .join(Marca, Marca.id_marca == Tienda.id_marca)  # JOIN entre Marca y Tienda
+            .where(Marca.nombre == nombre_marca)  # Filtro por nombre de marca
+            .where(HistorialInventarioTienda.fecha == fecha)  # Filtro por fecha
+            .group_by(HistorialInventarioTienda.whscode)  # Agrupamos whscode
+            .order_by('whscode')  # Ordenamos por mes y whscode
+        )
+        try:
+            result = self.session.exec(statement)
+            print(result)
+            return result.all()        
+        except Exception as e:
+            print(f'Fallo al obtener las agrupadas: {e}')
+            return []
 
     #? Funciones para historial inventario de almacen
     
