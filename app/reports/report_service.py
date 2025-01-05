@@ -32,9 +32,33 @@ class ReportService:
         if tipo_inventario == 'actual':
             inventarios_tiendas = self.inventario_service.get_store_inventories_total_stock_by_brand_name(nombre_marca)
         elif tipo_inventario == 'cierre-mes':
-            inventarios_tiendas = self.inventario_service.get_store_inventories_total_stock_by_brand_name_and_month(nombre_marca, mes, anio)
             # Evaluamos que se tenga el inventario con la fecha especificada, si no se retorno nada entonces usar el cierre de mes mas cercano
-            # TODO: Crear un método para obtener una lista con los inventarios de cierre de mes disponibles
+            lista_historiales_inventarios = self.inventario_service.get_end_month_history_inventory_list(nombre_marca)
+            # Buscamos el año y mes dentro del diccionadio de lista_historiales_inventarios
+            resultado = None
+            for item in lista_historiales_inventarios:
+                if item['anio'] == anio:  # Buscamos el año
+                    for inventario in item['inventario_cierre']:
+                        if inventario['name'] == mes.lower():  # Busca el mes dentro de 'inventario_cierre'
+                            resultado = inventario
+                            break
+                    if resultado:
+                        break
+
+            if resultado:
+                print("Elemento encontrado:", resultado)
+                inventarios_tiendas = self.inventario_service.get_store_inventories_total_stock_by_brand_name_and_month(nombre_marca, mes, anio)
+
+            else:
+                print("No se encontró el mes en el año especificado.")
+                # Si no se encuentra el mes en el año especificado, entonces se obtiene el inventario actual
+                # TODO: Cambiar esto en un futuro no muy lejano por el inventario mas cercano al del cierre de ese mes
+                inventarios_tiendas = self.inventario_service.get_store_inventories_total_stock_by_brand_name(nombre_marca)
+                # Crear una nueva lista con los valores numéricos reemplazados por 0 en las existencias
+                inventarios_tiendas = [(key, 0) for key, _ in inventarios_tiendas]
+
+
+
         else:
             raise ValueError("El tipo de inventario no es válido")
         

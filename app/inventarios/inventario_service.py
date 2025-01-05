@@ -112,18 +112,22 @@ class InventarioService:
             try:
                 # Diccionario para convertir números de mes a nombres de mes
                 meses_dict = {
-                    1: 'Enero', 2: 'Febrero', 3: 'Marzo', 'Abril':4, 5: 'Mayo', 6: 'Junio',
-                    7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+                    'Enero': 1, 'Febrero': 2, 'Marzo': 3, 'Abril': 4, 'Mayo': 5, 'Junio': 6,
+                    'Julio': 7, 'Agosto': 8, 'Septiembre': 9, 'Octubre': 10, 'Noviembre': 11, 'Diciembre': 12
                 }
                 response = []
                 data = uow.inventario_repository.get_end_month_history_inventory_list(nombre_marca)
                 for anio, meses in data:
-                    for mes in meses:
-                        meses_con_nombres = [{'index':meses_dict.get(mes),'name': mes} for mes in set(meses)]
-                        response.append({
-                            'anio': int(anio),
-                            'inventario_cierre': meses_con_nombres
-                        })
+                    # Convertimos los nombres de meses a índices y preparamos la lista
+                    meses_con_nombres = [
+                        {'index': meses_dict[mes], 'name': mes.lower()}  # Convertimos a minúsculas
+                        for mes in sorted(meses, key=lambda m: meses_dict[m])  # Ordenamos por índice
+                    ]
+                    
+                    response.append({
+                        'anio': int(anio),  # Convertimos el año a entero
+                        'inventario_cierre': meses_con_nombres
+                    })
                 
                 return response
                 # Convertir los resultados a un DataFrame de Pandas                
