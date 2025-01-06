@@ -74,7 +74,7 @@ class InventarioService:
 
     # Funcion para obtener el inventario de una marca del historial de inventarios
     def get_store_inventories_total_stock_by_brand_name_and_month(self, nombre_marca:str, mes:str, anio:int):
-        """Función para obtener El total de existencias en cantidad de los almacenes virtuales de una marca"""
+        """Función para obtener El total de existencias en cantidad de los inventarios en tienda de una marca"""
         # Convertimos el mes a número a partir de un diccionario de meses con el nombre de los meses en español mexico
         meses_dict = {
                 'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4,
@@ -98,7 +98,7 @@ class InventarioService:
         with UnitOfWork() as uow:
             # Intenta la operacion en la bd
             try:
-                print(f'trayendo el inventario {fecha}')
+                
                 return uow.inventario_repository.get_history_store_inventories_total_stock_by_brand_name(nombre_marca, fecha)
             except Exception as e:
                     # Log de la excepción para saber el error
@@ -131,6 +131,69 @@ class InventarioService:
                 
                 return response
                 # Convertir los resultados a un DataFrame de Pandas                
+            except Exception as e:
+                    # Log de la excepción para saber el error
+                    print(f"Error al obtener registros: {e}")
+
+    # Funcion para obtener el inventario de almacenes virtuales de una marca del historial de inventarios
+    def get_history_from_virtual_warehouses_inventories_total_stock_by_brand_name(self, nombre_marca:str, mes:str, anio:int):
+        """Función para obtener El total de existencias en cantidad de los almacenes virtuales de una marca"""
+        # Convertimos el mes a número a partir de un diccionario de meses con el nombre de los meses en español mexico
+        meses_dict = {
+                'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4,
+                'mayo': 5, 'junio': 6, 'julio': 7, 'agosto': 8,
+                'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12
+            }
+        
+        mes = mes.lower()
+        mes_numero = meses_dict[mes]
+        # Calculamos el mes siguiente, pero si es diciembre, el siguiente es enero
+        if mes_numero == 12:
+            # Si el mes supera al 12, se reinicia el mes a 1 y se incrementa el año
+            mes_siguiente = 1
+            anio += 1
+        else:
+            mes_siguiente = mes_numero + 1
+
+        # Creamos una fecha a partir del mes siguiente y año recibido
+        fecha = date(anio, mes_siguiente, 1)
+
+        with UnitOfWork() as uow:
+            # Intenta la operacion en la bd
+            try:
+                return uow.inventario_repository.get_history_from_virtual_warehouses_inventories_total_stock_by_brand_name(nombre_marca, fecha)
+            except Exception as e:
+                    # Log de la excepción para saber el error
+                    print(f"Error al obtener registros: {e}")
+
+    # Funcion para obtener el inventario de almacenes virtuales de una marca del historial de inventarios
+    def get_history_from_physical_warehouses_inventories_total_stock_by_brand_name(self, nombre_marca:str, mes:str, anio:int):
+        """Función para obtener El total de existencias en cantidad de los almacenes fisicos de una marca"""
+        # Convertimos el mes a número a partir de un diccionario de meses con el nombre de los meses en español mexico
+        meses_dict = {
+                'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4,
+                'mayo': 5, 'junio': 6, 'julio': 7, 'agosto': 8,
+                'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12
+            }
+        
+        mes = mes.lower()
+        mes_numero = meses_dict[mes]
+        # Calculamos el mes siguiente, pero si es diciembre, el siguiente es enero
+        if mes_numero == 12:
+            # Si el mes supera al 12, se reinicia el mes a 1 y se incrementa el año
+            mes_siguiente = 1
+            anio += 1
+        else:
+            mes_siguiente = mes_numero + 1
+
+        # Creamos una fecha a partir del mes siguiente y año recibido
+        fecha = date(anio, mes_siguiente, 1)
+
+        with UnitOfWork() as uow:
+            # Intenta la operacion en la bd
+            try:
+                print(f'trayendo el inventario {fecha}')
+                return uow.inventario_repository.get_history_from_physical_warehouses_inventories_total_stock_by_brand_name(nombre_marca, fecha)
             except Exception as e:
                     # Log de la excepción para saber el error
                     print(f"Error al obtener registros: {e}")

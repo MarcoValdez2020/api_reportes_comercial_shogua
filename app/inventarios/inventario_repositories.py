@@ -3,7 +3,7 @@ from sqlalchemy import text
 from sqlalchemy import func
 from datetime import date
 from typing import List,Tuple
-from inventarios.inventario_schemas import InventarioTienda, InventarioAlmacen, HistorialInventarioTienda
+from inventarios.inventario_schemas import InventarioTienda, InventarioAlmacen, HistorialInventarioTienda, HistorialInventarioAlmacen
 from shared.shared_schemas import Marca, Tienda, Almacen
 
 
@@ -126,7 +126,6 @@ class InventarioRepository:
         )
         try:
             result = self.session.exec(statement)
-            print(result)
             return result.all()        
         except Exception as e:
             print(f'Fallo al obtener las agrupadas: {e}')
@@ -166,5 +165,55 @@ class InventarioRepository:
             return []
 
     #? Funciones para historial inventario de almacen
+    # Método de repositorio para obtener los la suma total de stock de almacenes virtuales de una marca
+    def get_history_from_virtual_warehouses_inventories_total_stock_by_brand_name(self, nombre_marca: str, fecha:date):
+        # Realizar la consulta utilizando SQLAlchemy (funciones como DATE_TRUNC)
+        statement = (
+            select(
+                func.sum(HistorialInventarioAlmacen.existencia).label('total_existencias')
+            )
+            .join(Almacen, HistorialInventarioAlmacen.id_almacen == Almacen.id_almacen)  # JOIN entre Tienda e InventarioTienda
+            .join(Marca, Marca.id_marca == Almacen.id_marca)  # JOIN entre Marca y Tienda
+            .where(
+                Marca.nombre == nombre_marca,  # Filtro por nombre de marca
+                HistorialInventarioAlmacen.fecha == fecha, # Filtrar por fecha
+                ~Almacen.whscode.in_(['CDCUN01', 'CDMX01'])  # Exceptuamos los almacenes fisicos
+            )
+        )
+        try:
+            result = self.session.exec(statement)
+            return result.one()
+        except Exception as e:
+            print(f'Fallo al obtener las agrupadas: {e}')
+            return [] 
+
+
+    # Método de repositorio para obtener los la suma total de stock de almacenes fisicos de una marca
+    def get_history_from_physical_warehouses_inventories_total_stock_by_brand_name(self, nombre_marca: str, fecha:date) -> List[Tuple[str, int]]:
+        # Realizar la consulta utilizando SQLAlchemy (funciones como DATE_TRUNC)
+        statement = (
+            select(
+                HistorialInventarioAlmacen.id_almacen.label('id_almacen'),
+                Almacen.whscode.label('whscode'),
+                func.sum(HistorialInventarioAlmacen.existencia).label('total_existencias')
+            )
+            .join(Almacen, HistorialInventarioAlmacen.id_almacen == Almacen.id_almacen)  # JOIN entre Almacen e HistorialInventarioAlmacen
+            .join(Marca, Marca.id_marca == Almacen.id_marca)  # JOIN entre Marca y Almacen
+            .where(
+                Marca.nombre == nombre_marca,  # Filtro por nombre de marca
+                HistorialInventarioAlmacen.fecha == fecha,  # Filtro por nombre de marca
+                Almacen.whscode.in_(['CDCUN01', 'CDMX01'])  # Filtro para almacenes físicos
+            )
+            .group_by(HistorialInventarioAlmacen.id_almacen, Almacen.whscode)
+        )
     
-    #? Funciones para historial inventario de almacen
+        
+        try:
+            result = self.session.exec(statement)
+            print(result)
+            # Convertimos a lista; si no hay resultados, retorna una lista vacía
+            return result.all() if result else []
+        except Exception as e:
+            print(f'Fallo al obtener las agrupadas: {e}')
+            return []  
+

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from datetime import date
+import traceback
 
 from ventas.venta_service import VentaService
 from shared.shared_service import SharedService
@@ -37,15 +38,18 @@ async def get_month_end_report_ag_y_mu(
 async def get_month_end_report_tous_hm_y_ricodeli(
     nombre_marca:str, 
     mes:str,
-    anio:int
+    anio:int,
+    tipo_inventario:str
 ):
     try:
-        cierre_mes = report_service.get_month_end_report_tous_hm_y_ricodeli(nombre_marca, mes, anio)
+        cierre_mes = report_service.get_month_end_report_tous_hm_y_ricodeli(nombre_marca, mes, anio,tipo_inventario)
         return cierre_mes
     
     except ValueError as e:  # Excepción específica de tu lógica de negocio
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        tb = traceback.format_exc()  # Obtiene el traceback completo
+        print(f"Error en get_month_end_report_tumi: {e}\n{tb}")
         print(f"Error en get_month_end_report_tous_hm_y_ricodeli: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
     
@@ -55,10 +59,11 @@ async def get_month_end_report_tous_hm_y_ricodeli(
 async def get_month_end_report_tumi(
     nombre_marca:str, 
     mes:str,
-    anio:int
+    anio:int,
+    tipo_inventario:str
 ):
     try:
-        cierre_mes = report_service.get_month_end_report_tumi(nombre_marca, mes, anio)
+        cierre_mes = report_service.get_month_end_report_tumi(nombre_marca, mes, anio, tipo_inventario)
         return cierre_mes
     
     except ValueError as e:  # Excepción específica de tu lógica de negocio
@@ -73,10 +78,11 @@ async def get_month_end_report_tumi(
 async def get_month_end_report_unode50(
     nombre_marca:str, 
     mes:str,
-    anio: int
+    anio: int,
+    tipo_inventario:str
 ):
     try:
-        cierre_mes = report_service.get_month_end_report_unode50(nombre_marca, mes, anio)
+        cierre_mes = report_service.get_month_end_report_unode50(nombre_marca, mes, anio, tipo_inventario)
         return cierre_mes
     
     except ValueError as e:  # Excepción específica de tu lógica de negocio
@@ -91,10 +97,11 @@ async def get_month_end_report_unode50(
 async def get_month_end_report_penguin(
     nombre_marca:str, 
     mes:str,
-    anio: int
+    anio: int,
+    tipo_inventario:str
 ):
     try:
-        cierre_mes = report_service.get_month_end_report_penguin(nombre_marca, mes, anio)
+        cierre_mes = report_service.get_month_end_report_penguin(nombre_marca, mes, anio,tipo_inventario)
         return cierre_mes
     
     except ValueError as e:  # Excepción específica de tu lógica de negocio
