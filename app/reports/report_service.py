@@ -595,6 +595,7 @@ class ReportService:
             total_punto_equilibrio = total_punto_equilibrio,
             total_existencia_tiendas=total_existencia_tiendas,
             total_mos_tiendas=total_mos_tiendas,
+            total_existencias_bodegas=total_existencia_bodegas,
             total_mos_bodegas = total_mos_bodegas,
             total_mos_almacenes = total_mos_almacenes
 

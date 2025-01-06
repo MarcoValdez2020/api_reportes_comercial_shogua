@@ -99,6 +99,8 @@ class FinallyEndMonthReportTous(BaseModel):
         total_existencia_tiendas: int
         total_mos_tiendas: float
 
+
+        total_existencias_bodegas: Optional[float] = 0 # Suma de los almacenes fisicos
         total_mos_bodegas: float  # Las bodegas son almacenes físicos
         total_mos_almacenes: float # Los almacenes son almacenes virtuales
 
