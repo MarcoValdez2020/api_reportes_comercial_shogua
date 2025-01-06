@@ -660,7 +660,6 @@ class ReportService:
         tiendas_df = pd.DataFrame(tiendas)
 
         # Obtener los inventarios de todas las tiendas
-                # Obtener los inventarios de todas las tiendas
         # Si el tipo de inventario es 'actual', entonces traemos los inventario de tiendas actuales, pero si es 'cierre-mes' entonces llamamos al historial del inventario del mes seleccionado
         if tipo_inventario == 'actual':
             # Si el tipo de peticion es con inventario actual obtenemos el inventario de tiendas
@@ -986,17 +985,64 @@ class ReportService:
         tiendas_df = pd.DataFrame(tiendas)
 
         # Obtener los inventarios de todas las tiendas
-        inventarios_tiendas = self.inventario_service.get_store_inventories_total_stock_by_brand_name(nombre_marca)
+        # Si el tipo de inventario es 'actual', entonces traemos los inventario de tiendas actuales, pero si es 'cierre-mes' entonces llamamos al historial del inventario del mes seleccionado
+        if tipo_inventario == 'actual':
+            # Si el tipo de peticion es con inventario actual obtenemos el inventario de tiendas
+            inventarios_tiendas = self.inventario_service.get_store_inventories_total_stock_by_brand_name(nombre_marca)
+            # Luego obtenemos el de los almacenes
+            # Obtener la suma de stock de los almacenes virtuales
+            inventarios_almacenes_virtuales = self.inventario_service.get_virtual_warehouses_inventories_total_stock_by_brand_name(nombre_marca)
+            suma_stock_almacenes_virtuales = inventarios_almacenes_virtuales[0]
+
+            # Obtener la suma de los inventarios fisicos de los almacenes
+            inventarios_almacenes_fisicos = self.inventario_service.get_physical_warehouses_inventories_total_stock_by_brand_name(nombre_marca)
+        
+        elif tipo_inventario == 'cierre-mes':
+            # Evaluamos que se tenga el inventario con la fecha especificada, si no se retorno nada entonces usar el cierre de mes mas cercano
+            lista_historiales_inventarios = self.inventario_service.get_end_month_history_inventory_list(nombre_marca)
+            # Buscamos el año y mes dentro del diccionadio de lista_historiales_inventarios
+            resultado = None
+            for item in lista_historiales_inventarios:
+                if item['anio'] == anio:  # Buscamos el año
+                    for inventario in item['inventario_cierre']:
+                        if inventario['name'] == mes.lower():  # Busca el mes dentro de 'inventario_cierre'
+                            resultado = inventario
+                            break
+                    if resultado:
+                        break
+
+            if resultado:
+                # Si existe el mes entonces cargamos el inventario desde el historial de inventarios
+                inventarios_tiendas = self.inventario_service.get_store_inventories_total_stock_by_brand_name_and_month(nombre_marca, mes, anio)
+                # Si existe entonces cargamos la suma de inventarios del historial de almacenes fisicos
+                # Obtener la suma de stock de los almacenes virtuales
+                inventarios_almacenes_virtuales = self.inventario_service.get_history_from_virtual_warehouses_inventories_total_stock_by_brand_name(nombre_marca, mes, anio)
+                suma_stock_almacenes_virtuales = int(inventarios_almacenes_virtuales)
+                # Obtener la suma de los inventarios fisicos de los almacenes
+                inventarios_almacenes_fisicos = self.inventario_service.get_history_from_physical_warehouses_inventories_total_stock_by_brand_name(nombre_marca, mes, anio)
+
+
+            else:
+                print("No se encontró el mes en el año especificado.")
+                # Si no se encuentra el mes en el año especificado, entonces se obtiene el inventario actual para las tiendas
+                inventarios_tiendas = self.inventario_service.get_store_inventories_total_stock_by_brand_name(nombre_marca)
+                # Crear una nueva lista con los valores numéricos reemplazados por 0 en las existencias
+                inventarios_tiendas = [(key, 0) for key, _ in inventarios_tiendas]
+
+                # De igual manera setear en 0 la suma de existencias virtuales
+                suma_stock_almacenes_virtuales = 0
+                
+                # Extraemos los actuales para la estuctura y los seteamos en 0
+                inventarios_almacenes_fisicos = self.inventario_service.get_physical_warehouses_inventories_total_stock_by_brand_name(nombre_marca)
+                # Crear una nueva lista con el las existencias en 0
+                inventarios_almacenes_fisicos = [(x, y, 0) for x, y, _ in inventarios_almacenes_fisicos]
+                
+        else:
+            raise ValueError("El tipo de inventario no es válido")
+        
         inventarios_tiendas_dict = self.inventario_service.transform_store_inventories_total_stock(inventarios_tiendas)
         inventarios_tiendas_df = pd.DataFrame(inventarios_tiendas_dict)
         
-        # Obtener la suma de stock de los almacenes virtuales
-        inventarios_almacenes_virtuales = self.inventario_service.get_virtual_warehouses_inventories_total_stock_by_brand_name(nombre_marca)
-        suma_stock_almacenes_virtuales = inventarios_almacenes_virtuales[0]
-
-        # Obtener la suma de los inventarios fisicos de los almacenes
-        inventarios_almacenes_fisicos = self.inventario_service.get_physical_warehouses_inventories_total_stock_by_brand_name(nombre_marca)
-        # print(inventarios_almacenes_fisicos, len(inventarios_almacenes_fisicos))
         # En caso de no tener existencia en los almacenes físicos (dos almacenes), retornar el diccionario con valores vacíos
         if len(inventarios_almacenes_fisicos) == 0:
             inventarios_almacenes_fisicos = [
