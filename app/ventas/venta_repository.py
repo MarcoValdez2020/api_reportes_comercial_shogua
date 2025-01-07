@@ -1,7 +1,7 @@
 import pandas as pd
 from sqlmodel import Session,select
 from datetime import date
-from sqlalchemy import func, select, func, cast, DECIMAL, distinct
+from sqlalchemy import func, select, func, cast, DECIMAL, distinct, or_
 from typing import List,Tuple
 
 from ventas.venta_schemas import Venta
@@ -81,6 +81,7 @@ class VentaRepository:
     
     def get_ventas_promedio_mensual_por_marca(self, nombre_marca: str,fecha_inicio:date, fecha_fin: date) -> list:  
         # Subconsulta con JOINs y filtros para obtener la suma y el promedio mensual
+        print(f'{fecha_inicio} - {fecha_fin}')
         statement = (
             select(
                 Venta.whscode,
@@ -98,6 +99,8 @@ class VentaRepository:
             .where(Marca.nombre == nombre_marca)  # Filtro por nombre de la marca
             .where(Venta.fecha >= func.date_trunc('month', fecha_inicio))  # Filtro por fecha de inicio
             .where(Venta.fecha <= fecha_fin)  # Filtro por fecha de fin
+            # Excluir ventas entre -1 y 1
+            .where(or_(Venta.venta_neta_sin_iva < -1, Venta.venta_neta_sin_iva > 1))  
             .group_by(Venta.whscode)  # Agrupación por tienda
         )
 
