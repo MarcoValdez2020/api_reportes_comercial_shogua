@@ -627,15 +627,21 @@ class ReportService:
             Returns:
                 pd.DataFrame: Las tiendas con su respectiva cantidad de unidades que le corresponden del almacen.
         """
+        # # Filtramos las tiendas a solo las que estan abiertas para repartir
+        # tiendas_con_participacion_venta = tiendas_con_participacion_venta.copy()
+        # tiendas_con_participacion_venta = tiendas_con_participacion_venta[tiendas_con_participacion_venta['estado_operativo']=='ABIERTA']
+        
         if almacen_fisico_df.empty:
             tiendas_con_participacion_venta['existencias_almacen'] = 0
         else: 
             # Obtenemos el total de las existencias del almacen fisico
             total_existencias_almacen_fisico = almacen_fisico_df['total_existencias'].iloc[0]
 
-            # Calculamos la cantidad de pzas que le corresponden a cada tienda
-            tiendas_con_participacion_venta['existencias_almacen'] = (
-                total_existencias_almacen_fisico * tiendas_con_participacion_venta['porcentaje_participacion_venta_tienda']
+            # Calculamos la cantidad de piezas con np.where para solo repartir entre tiendas abiertas el almacen fisico
+            tiendas_con_participacion_venta['existencias_almacen'] = np.where(
+                tiendas_con_participacion_venta['estado_operativo'] == 'ABIERTA',  # Condición
+                total_existencias_almacen_fisico * tiendas_con_participacion_venta['porcentaje_participacion_venta_tienda'],  # Valor si es verdadera
+                0  # Valor si es falsa
             )
 
         return tiendas_con_participacion_venta
