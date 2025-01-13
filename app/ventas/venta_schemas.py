@@ -7,7 +7,8 @@ from decimal import Decimal
 class Ticket(SQLModel, table=True):
     __tablename__ = 'ticket'
 
-    ticket: str = Field(primary_key=True, index=True)
+    id_ticket: str = Field(primary_key=True, index=True)
+    ticket: str
     fecha: date
     cantidad: int
     total: Decimal
@@ -16,6 +17,7 @@ class Ticket(SQLModel, table=True):
     def to_dict(self):
         """Devuelve un diccionario del objeto."""
         return {
+            'id_ticket': self.id_ticket,
             'ticket': self.ticket,
             'fecha': self.fecha,
             'cantidad': self.cantidad,
@@ -28,7 +30,7 @@ class Venta(SQLModel, table=True):
 
     id_venta: int = Field(default=None, primary_key=True)
     fecha: Optional[date] = None
-    ticket: str = Field(foreign_key="ticket.ticket", nullable=False)
+    id_ticket: str = Field(foreign_key="ticket.id_ticket", nullable=False)
     id_producto: str = Field(foreign_key="producto.id_producto", nullable=False)
     whscode: str = Field(foreign_key="tienda.whscode", nullable=False)
     descuento_de_linea: Optional[int] = None
@@ -46,7 +48,7 @@ class Venta(SQLModel, table=True):
         """Devuelve un diccionario del objeto."""
         return {
             'fecha': self.fecha,
-            'ticket': self.ticket,
+            'id_ticket': self.id_ticket,
             'id_producto': self.id_producto,
             'whscode': self.whscode,
             'descuento_de_linea': self.descuento_de_linea,

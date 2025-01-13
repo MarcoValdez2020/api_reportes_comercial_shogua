@@ -2,6 +2,8 @@ import pandas as pd
 from sqlmodel import Session,select
 from datetime import date
 from sqlalchemy import func, select, func, cast, DECIMAL, distinct, or_
+from sqlalchemy.exc import SQLAlchemyError
+
 from typing import List,Tuple
 
 from ventas.venta_schemas import Venta
@@ -21,17 +23,17 @@ class VentaRepository:
     def get_all_by_brand_name(self, nombre_marca: str, fecha_inicio: date, fecha_fin: date) -> list[Venta]:
         statement = (
             select(Venta)
-            .join(Producto, Producto.id_producto == Venta.id_producto)  # JOIN entre Venta y Producto
-            .join(Marca, Marca.id_marca == Producto.id_marca)  # JOIN entre Producto y Marca
+            .join(Tienda, Tienda.whscode == Venta.whscode)  # JOIN entre Venta y Producto
+            .join(Marca, Marca.id_marca == Tienda.id_marca)  # JOIN entre Producto y Marca
             .where(Marca.nombre == nombre_marca) # Filtro por nombre de marca
-            .where(Venta.fecha >= fecha_inicio)  # Filtro por fecha de inicio
-            .where(Venta.fecha <= fecha_fin)  # Filtro por fecha de fin
+            .where(Venta.fecha >= fecha_inicio, Venta.fecha <= fecha_fin)  # Filtro por rango de fechas
         )
         try:
-            result = self.session.exec(statement)
-        except Exception as e:
+            result = self.session.exec(statement).scalars() # Retornamos solo las instancias con scalars()
+            return result.all()
+        except SQLAlchemyError as e:
             print(f'Fallo al obtener las ventas por marca: {e}')
-        return result.all()
+            return []
     
     # Método de repositorio para obtener ventas agrupadas por año-mes, 
     def get_sales_grouped_by_month_and_whscode(self, nombre_marca: str, fecha_inicio: date, fecha_fin: date) -> List[Tuple[str, str, float]]:
@@ -42,8 +44,8 @@ class VentaRepository:
                 Venta.whscode.label('whscode'),  # Agrupación por whscode
                 func.sum(Venta.venta_neta_con_iva).label('total_venta_neta_con_iva')
             )
-            .join(Producto, Producto.id_producto == Venta.id_producto)  # JOIN entre Venta y Producto
-            .join(Marca, Marca.id_marca == Producto.id_marca)  # JOIN entre Producto y Marca
+            .join(Tienda, Tienda.whscode == Venta.whscode)  # JOIN entre Venta y Producto
+            .join(Marca, Marca.id_marca == Tienda.id_marca)  # JOIN entre Producto y Marca
             .where(Marca.nombre == nombre_marca)  # Filtro por nombre de marca
             .where(Venta.fecha >= fecha_inicio, Venta.fecha <= fecha_fin)  # Filtro por rango de fechas
             .group_by(func.date_trunc('month', Venta.fecha), Venta.whscode)  # Agrupamos por mes y whscode
@@ -51,10 +53,10 @@ class VentaRepository:
         )
         try:
             result = self.session.exec(statement)
-            print(result)
+            return result.all()
         except Exception as e:
             print(f'Fallo al obtener las agrupadas: {e}')
-        return result.all()        
+            return [] 
 
     # Método para obtener las ventas agrupadas por año
     def get_sales_grouped_by_year_and_whscode(self, nombre_marca: str, fecha_inicio: date, fecha_fin: date) -> List[Tuple[str, str, float]]:
