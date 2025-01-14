@@ -31,7 +31,7 @@ class ProductoService:
             try:
                 # Obtener tallas por nombre de marca
                 data = uow.prducto_repository.getAllProductControlsByBrandName(nombre_marca, control_name)
-                response = [{'control_name':control_name, 'value':value} for value in data]
+                response = [{'control_name':control_name, 'value':str(value)} for value in data if value is not None]
                 return response
             except Exception as e:
                 # Log de la excepción para saber el error

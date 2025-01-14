@@ -46,7 +46,8 @@ class ProductoRepository:
         elif control_name == 'disenio':
             column_to_select = Producto.disenio
         else:
-            # Si el parámetro no es 'talla' ni 'control', se puede poner una columna por defecto
+            # Columna por defecto va ser talla
+            control_name ='talla'
             column_to_select = Producto.talla  # o alguna otra columna válida
 
         # Ahora creamos la consulta con la columna seleccionada
