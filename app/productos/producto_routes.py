@@ -27,7 +27,7 @@ async def get_all_products():
 #     return producto
 
 @router.get("/get-controls-by-brand-name", response_model=list[ProductoControls])
-async def get_all_products(
+async def get_products_controls_by_brand_name(
     nombre_marca:str,
     control_name:str
 ):

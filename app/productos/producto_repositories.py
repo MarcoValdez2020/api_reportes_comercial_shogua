@@ -43,6 +43,8 @@ class ProductoRepository:
             column_to_select = Producto.genero
         elif control_name == 'coleccion':
             column_to_select = Producto.coleccion
+        elif control_name == 'disenio':
+            column_to_select = Producto.disenio
         else:
             # Si el parámetro no es 'talla' ni 'control', se puede poner una columna por defecto
             column_to_select = Producto.talla  # o alguna otra columna válida
