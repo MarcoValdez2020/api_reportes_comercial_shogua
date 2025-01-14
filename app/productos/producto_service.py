@@ -24,3 +24,18 @@ class ProductoService:
         with UnitOfWork() as uow:
             # Obtener el registro por ID
             return uow.prducto_repository.get_by_id(id_producto)
+        
+    def get_products_controls_by_brand_name(self, nombre_marca:str, control_name:str):
+        """Obtener el valor unico de tallas de producto por marca"""
+        with UnitOfWork() as uow:
+            try:
+                # Obtener tallas por nombre de marca
+                data = uow.prducto_repository.getAllProductControlsByBrandName(nombre_marca, control_name)
+                response = [{'control_name':control_name, 'value':value} for value in data]
+                return response
+            except Exception as e:
+                # Log de la excepción para saber el error
+                print(f"Error al obtener productos: {e}")
+                raise HTTPException(status_code=500, detail="Error al obtener el producto")
+
+

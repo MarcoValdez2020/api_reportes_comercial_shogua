@@ -1,5 +1,6 @@
 from sqlmodel import Session,select
 from productos.producto_schemas import Producto
+from sqlalchemy.exc import SQLAlchemyError
 from shared.shared_schemas import Marca
 
 class ProductoRepository:
@@ -23,7 +24,47 @@ class ProductoRepository:
         statement = (
             select(Producto)
             .join(Marca)
-            .where(Marca.name == nombre_marca)
+            .where(Marca.nombre == nombre_marca)
         )
-        result = self.session.exec(statement)
-        return result.all()
+
+        try:
+            result = self.session.exec(statement)
+            return result.all()
+        except SQLAlchemyError as e:
+            print(f'Fallo al obtener las ventas por marca: {e}')
+            return []
+
+
+    def getAllProductControlsByBrandName(self, nombre_marca:str, control_name:str):
+        # Crear la base de la consulta con una columna predeterminada (en este caso Producto.talla)
+        if control_name == 'talla':
+            column_to_select = Producto.talla
+        elif control_name == 'genero':
+            column_to_select = Producto.genero
+        elif control_name == 'coleccion':
+            column_to_select = Producto.coleccion
+        else:
+            # Si el parámetro no es 'talla' ni 'control', se puede poner una columna por defecto
+            column_to_select = Producto.talla  # o alguna otra columna válida
+
+        # Ahora creamos la consulta con la columna seleccionada
+        statement = (
+            select(column_to_select)
+            .distinct()
+            .join(Marca)
+            .where(Marca.nombre == nombre_marca)
+            .where(Producto.talla.isnot(None))  # Excluye los valores NULL
+        )
+
+        try:
+            result = self.session.exec(statement)
+            data = result.all()
+
+            if data != [None]:
+                return data
+            else:
+                return []
+
+        except SQLAlchemyError as e:
+            print(f'Fallo al obtener las ventas por marca: {e}')
+            return []
