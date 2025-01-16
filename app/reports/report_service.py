@@ -1639,8 +1639,10 @@ class ReportService:
         tiendas = [t.to_dict() for t in self.shared_service.get_all_stores_by_brand_name(nombre_marca)]
         tiendas_df = pd.DataFrame(tiendas)
 
-        
-        datos_brutos_anio_actual = self.venta_service.get_departamentos_groped_by_whscode_sales_by_brand(nombre_marca, '2024-01-01','2024-01-31')
-        departamento_df= pd.DataFrame(datos_brutos_anio_actual)
+        # En el caso que sea mumuso y ag caramos el departamento
+        departamentos_anio_actual = self.venta_service.get_departamentos_groped_by_whscode_sales_by_brand(nombre_marca, '2024-01-01','2024-01-31')
+        departamento_df= pd.DataFrame(departamentos_anio_actual)
+
+        # Cargamos las categorias
         
         return departamento_df.to_dict('records')
