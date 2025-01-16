@@ -110,3 +110,22 @@ async def get_month_end_report_penguin(
         print(f"Error en get_month_end_report_penguin: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
     
+
+# Ruta expuesta para el reporte de cierre de mes de UNODE50
+@router.get("/get-store-detail-report")
+async def get_store_detail_report(
+    nombre_marca:str, 
+    mes:str,
+    anio: int,
+    tipo_inventario:str
+):
+    try:
+        detalle_tienda = report_service.obtener_reporte_detalle_tienda(nombre_marca, mes, anio,tipo_inventario)
+        return detalle_tienda
+    
+    except ValueError as e:  # Excepción específica de tu lógica de negocio
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        print(f"Error en get_store_detail_report: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+    

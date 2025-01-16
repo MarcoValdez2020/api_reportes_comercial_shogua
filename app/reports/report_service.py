@@ -1628,3 +1628,19 @@ class ReportService:
         
         return reporte_final_cierre_mes
     
+
+
+    #? Funciones para reporte de cierre de mes detalle tienda
+    # Funcion para obtener el reporte de detalle tienda de mes de todas las marcas 
+    def obtener_reporte_detalle_tienda(self,nombre_marca:str,anio:int, mes:str, tipo_inventario:str):
+        """Función para obtener el reporte de detalle tiendas en un periodo de mes"""
+        
+        # Obtener registros de las tiendas por marca y transformalo en df
+        tiendas = [t.to_dict() for t in self.shared_service.get_all_stores_by_brand_name(nombre_marca)]
+        tiendas_df = pd.DataFrame(tiendas)
+
+        # Obtener la sumatoria de categoria, y subcategoria de las marcas a nivel tienda
+        # categorias_y_subcategorias_p_t 
+
+
+        return tiendas_df.to_dict(orient='records')
