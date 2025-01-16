@@ -1639,8 +1639,8 @@ class ReportService:
         tiendas = [t.to_dict() for t in self.shared_service.get_all_stores_by_brand_name(nombre_marca)]
         tiendas_df = pd.DataFrame(tiendas)
 
-        # Obtener la sumatoria de categoria, y subcategoria de las marcas a nivel tienda
-        # categorias_y_subcategorias_p_t 
-
-
-        return tiendas_df.to_dict(orient='records')
+        
+        datos_brutos_anio_actual = self.venta_service.get_departamentos_groped_by_whscode_sales_by_brand(nombre_marca, '2024-01-01','2024-01-31')
+        departamento_df= pd.DataFrame(datos_brutos_anio_actual)
+        
+        return departamento_df.to_dict('records')

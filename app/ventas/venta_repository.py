@@ -2,6 +2,7 @@ import pandas as pd
 from sqlmodel import Session,select
 from datetime import date
 from sqlalchemy import func, select, func, cast, DECIMAL, distinct, or_
+from sqlalchemy.sql import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from typing import List,Tuple
@@ -160,3 +161,26 @@ class VentaRepository:
         except Exception as e:
             print(f'Fallo al obtener los años con ventas de una marca: {e}')
             return []
+        
+    def get_departamentos_groped_by_whscode_sales_by_brand(self, nombre_marca:str, fecha_inicio:str, fecha_fin:str):
+        """Función para traer los departamentos de la marca con sus totales"""
+        statement = (
+            select(
+                Tienda.whscode,
+                Marca.nombre,
+                Producto.departamento,
+                func.sum(Venta.cantidad).label('total_cantidad'),
+                func.sum(Venta.venta_neta_con_iva).label('total_efectivo_con_iva')
+            )
+            .join(Tienda, Venta.whscode == Tienda.whscode)
+            .join(Marca, Tienda.id_marca == Marca.id_marca)
+            .join(Producto, Venta.id_producto == Producto.id_producto)
+            .where(
+                Marca.nombre == nombre_marca,
+                Venta.fecha.between(fecha_inicio, fecha_fin)
+            )
+            .group_by(Tienda.whscode, Marca.nombre, Producto.departamento)
+            .order_by(func.sum(Venta.cantidad).desc())
+        )
+
+        return self.session.exec(statement).all()

@@ -150,5 +150,25 @@ class VentaService:
                     raise HTTPException(status_code=500, detail="Error al obtener registros")
 
 
+    def get_departamentos_groped_by_whscode_sales_by_brand(self,nombre_marca:str, fecha_inicio:str, fecha_fin:str):
+            with UnitOfWork() as uow:
+                # Intenta la operacion en la bd
+                try:
+                    data =  uow.venta_repository.get_departamentos_groped_by_whscode_sales_by_brand(nombre_marca,fecha_inicio,fecha_fin)
+                    keys = [
+                        "whscode",
+                        "nombre_marca",
+                        "departamento",
+                        "total_cantidad",
+                        "total_efectivo_con_iva",
+                    ]
+
+                    # Convertir todas las tuplas a diccionarios
+                    resultados = [dict(zip(keys, row)) for row in data]
+                    return resultados
+                except Exception as e:
+                        # Log de la excepción para saber el error
+                        print(f"Error al obtener registros: {e}")
+
     #? Funciones para trabajar con datos
 
