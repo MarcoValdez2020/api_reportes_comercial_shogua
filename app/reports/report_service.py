@@ -1640,7 +1640,7 @@ class ReportService:
         tiendas_df = pd.DataFrame(tiendas)
 
         # En el caso que sea mumuso y ag caramos el departamento
-        departamentos_anio_actual = self.venta_service.get_departamentos_groped_by_whscode_sales_by_brand(nombre_marca, '2024-01-01','2024-01-31')
+        departamentos_anio_actual = self.venta_service.get_grouped_sales_by_level_by_brand(nombre_marca, '2024-01-01','2024-01-31','subcategoria')
         departamento_df= pd.DataFrame(departamentos_anio_actual)
 
         # Cargamos las categorias

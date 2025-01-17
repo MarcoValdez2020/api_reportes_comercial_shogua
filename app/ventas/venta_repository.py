@@ -162,13 +162,48 @@ class VentaRepository:
             print(f'Fallo al obtener los años con ventas de una marca: {e}')
             return []
         
-    def get_departamentos_groped_by_whscode_sales_by_brand(self, nombre_marca:str, fecha_inicio:str, fecha_fin:str):
-        """Función para traer los departamentos de la marca con sus totales"""
+
+    def get_grouped_sales_by_level_by_brand(self, nombre_marca: str, fecha_inicio: str, fecha_fin: str, nivel: str):
+        """
+        Obtiene las ventas agrupadas por nivel (departamento, categoría, subcategoría) de una marca.
+
+        Args:
+            nombre_marca (str): El nombre de la marca por la cual filtrar los datos.
+            fecha_inicio (str): La fecha de inicio para filtrar las ventas (formato 'YYYY-MM-DD').
+            fecha_fin (str): La fecha de fin para filtrar las ventas (formato 'YYYY-MM-DD').
+            nivel (str): Nivel de agrupación. Puede ser 'departamento', 'categoria' o 'subcategoria'.
+
+        Returns:
+            List[dict]: Lista de resultados con las ventas agrupadas por nivel, incluyendo cantidades y totales.
+
+        Raises:
+            ValueError: Si el nivel proporcionado no es válido.
+        """
+        # Mapear el nivel a las columnas correspondientes de Producto
+        niveles_validos = {
+            "departamento": [Producto.departamento],
+            "categoria": [Producto.departamento, Producto.categoria],
+            "subcategoria": [Producto.departamento, Producto.categoria, Producto.subcategoria],  
+
+            "genero": [Producto.departamento, Producto.categoria, Producto.subcategoria, Producto.genero], 
+            "talla": [Producto.departamento, Producto.categoria, Producto.subcategoria, Producto.talla], 
+            "disenio": [Producto.departamento, Producto.categoria, Producto.subcategoria, Producto.disenio], 
+            "coleccion": [Producto.departamento, Producto.categoria, Producto.subcategoria, Producto.coleccion], 
+        }
+        
+        # Validar que el nivel sea válido
+        if nivel not in niveles_validos:
+            raise ValueError(f"Nivel inválido: {nivel}. Los niveles válidos son: {list(niveles_validos.keys())}")
+        
+        # Construir las columnas dinámicamente según el nivel
+        columnas_nivel = niveles_validos[nivel]
+        
+        # Crear la consulta con las columnas dinámicas
         statement = (
             select(
                 Tienda.whscode,
                 Marca.nombre,
-                Producto.departamento,
+                *columnas_nivel,
                 func.sum(Venta.cantidad).label('total_cantidad'),
                 func.sum(Venta.venta_neta_con_iva).label('total_efectivo_con_iva')
             )
@@ -179,8 +214,8 @@ class VentaRepository:
                 Marca.nombre == nombre_marca,
                 Venta.fecha.between(fecha_inicio, fecha_fin)
             )
-            .group_by(Tienda.whscode, Marca.nombre, Producto.departamento)
+            .group_by(Tienda.whscode, Marca.nombre, *columnas_nivel)
             .order_by(func.sum(Venta.cantidad).desc())
         )
-
+        
         return self.session.exec(statement).all()

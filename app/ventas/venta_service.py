@@ -150,18 +150,29 @@ class VentaService:
                     raise HTTPException(status_code=500, detail="Error al obtener registros")
 
 
-    def get_departamentos_groped_by_whscode_sales_by_brand(self,nombre_marca:str, fecha_inicio:str, fecha_fin:str):
+    def get_grouped_sales_by_level_by_brand(self,nombre_marca:str, fecha_inicio:str, fecha_fin:str, nivel:str):
             with UnitOfWork() as uow:
                 # Intenta la operacion en la bd
                 try:
-                    data =  uow.venta_repository.get_departamentos_groped_by_whscode_sales_by_brand(nombre_marca,fecha_inicio,fecha_fin)
-                    keys = [
-                        "whscode",
-                        "nombre_marca",
-                        "departamento",
-                        "total_cantidad",
-                        "total_efectivo_con_iva",
-                    ]
+                    # Hacemos la peticion al repositorio
+                    data =  uow.venta_repository.get_grouped_sales_by_level_by_brand(nombre_marca,fecha_inicio,fecha_fin, nivel)
+                    
+                    # Definimos los niveles validos
+                    niveles_validos = {
+                        "departamento": ["departamento"],
+                        "categoria": ["departamento", "categoria"],
+                        "subcategoria": ["departamento", "categoria", "subcategoria"], 
+                        
+                        "genero": ["departamento", "categoria", "subcategoria", "genero"],                    
+                        "talla": ["departamento", "categoria", "subcategoria", "talla"],                    
+                        "disenio": ["departamento", "categoria", "subcategoria", "genero"],                    
+                        "coleccion": ["departamento", "categoria", "subcategoria", "genero"]
+                    }                   
+                    # Basados en el nivel seleccionamos las keys de nuestro objeto
+                    columnas_nivel = niveles_validos[nivel]
+                    # Concatenamos el objeto completo
+                    keys = ["whscode", "nombre_marca"] + columnas_nivel + ["total_cantidad", "total_efectivo_con_iva"]
+
 
                     # Convertir todas las tuplas a diccionarios
                     resultados = [dict(zip(keys, row)) for row in data]
