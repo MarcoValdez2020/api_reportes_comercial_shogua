@@ -1632,17 +1632,52 @@ class ReportService:
 
     #? Funciones para reporte de cierre de mes detalle tienda
     # Funcion para obtener el reporte de detalle tienda de mes de todas las marcas 
-    def obtener_reporte_detalle_tienda(self,nombre_marca:str,anio:int, mes:str, tipo_inventario:str):
+    def obtener_reporte_detalle_tienda(self,nombre_marca:str, mes:str, anio:int, tipo_inventario:str):
         """Función para obtener el reporte de detalle tiendas en un periodo de mes"""
+
+        #* Generamos la fecha en base al mes y año recibidos como parametro
         
+        # Evaluamos el año recibido como parametro y lo asignamos como año actual
+        if anio:
+            anio_actual = int(anio)
+        else:
+            anio_actual = date.today().year
+    
+        anio_anterior = anio_actual-1
+        meses_dict = {
+                'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4,
+                'mayo': 5, 'junio': 6, 'julio': 7, 'agosto': 8,
+                'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12
+            }
+        
+        mes = mes.lower()
+        mes_numero = meses_dict[mes]
+        _,ultimo_dia_mes_anio_actual = calendar.monthrange(anio_actual,mes_numero)
+        _,ultimo_dia_mes_anio_anterior = calendar.monthrange(anio_anterior,mes_numero)
+
+        # Definimos las fechas  de inicio y fin de mes  del año actual
+        fecha_inicio_mes_anio_actual = f'{anio_actual}-{mes_numero:02}-01'
+        fecha_fin_mes_anio_actual =f'{anio_actual}-{mes_numero:02}-{ultimo_dia_mes_anio_actual}'
+        
+        # Definimos las fechas de inicio y fin de mes del año anterior
+        fecha_inicio_mes_anio_anterior = f'{anio_anterior}-{mes_numero:02}-01'
+        fecha_fin_mes_anio_anterior =f'{anio_actual}-{mes_numero:02}-{ultimo_dia_mes_anio_anterior}'
+
+        #* Consultas a la bd
         # Obtener registros de las tiendas por marca y transformalo en df
         tiendas = [t.to_dict() for t in self.shared_service.get_all_stores_by_brand_name(nombre_marca)]
         tiendas_df = pd.DataFrame(tiendas)
 
-        # En el caso que sea mumuso y ag caramos el departamento
-        departamentos_anio_actual = self.venta_service.get_grouped_sales_by_level_by_brand(nombre_marca, '2024-01-01','2024-01-31','subcategoria')
-        departamento_df= pd.DataFrame(departamentos_anio_actual)
+        # Evaluamos las marcas, puesto que algunas se agrupan de manera diferente
+        if nombre_marca == 'AY GÜEY':
+            # Obtenemos la informacion con los años actuales
+            categorias_mes_anio_actual = self.venta_service.get_grouped_sales_by_level_by_brand(nombre_marca, fecha_inicio_mes_anio_actual,fecha_fin_mes_anio_actual,'categoria')
+            categorias_mes_anio_actual_df = pd.DataFrame(categorias_mes_anio_actual)
 
-        # Cargamos las categorias
+            # Obtenemos la informacion de los años anteriores
+            categorias_mes_anio_anterior = self.venta_service.get_grouped_sales_by_level_by_brand(nombre_marca, fecha_inicio_mes_anio_anterior,fecha_fin_mes_anio_anterior,'categoria')
+            categorias_mes_anio_anterior_df = pd.DataFrame(categorias_mes_anio_actual)
         
-        return departamento_df.to_dict('records')
+        
+        
+        return categorias_mes_anio_actual_df.to_dict('records')
