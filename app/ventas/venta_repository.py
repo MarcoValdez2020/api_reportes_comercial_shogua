@@ -1,7 +1,7 @@
 import pandas as pd
-from sqlmodel import Session,select
+from sqlmodel import Session,select, and_
 from datetime import date
-from sqlalchemy import func, select, func, cast, DECIMAL, distinct, or_
+from sqlalchemy import func, select, func, cast, DECIMAL, distinct, or_, case
 from sqlalchemy.sql import text
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -202,7 +202,6 @@ class VentaRepository:
         statement = (
             select(
                 Tienda.whscode,
-                Marca.nombre,
                 *columnas_nivel,
                 func.sum(Venta.cantidad).label('total_cantidad'),
                 func.sum(Venta.venta_neta_con_iva).label('total_efectivo_con_iva')
@@ -214,8 +213,131 @@ class VentaRepository:
                 Marca.nombre == nombre_marca,
                 Venta.fecha.between(fecha_inicio, fecha_fin)
             )
-            .group_by(Tienda.whscode, Marca.nombre, *columnas_nivel)
+            .group_by(Tienda.whscode, *columnas_nivel)
+            .having(
+                and_(
+                    func.sum(Venta.cantidad) > 0,
+                    func.sum(Venta.venta_neta_con_iva) > 0
+                )
+            )
             .order_by(func.sum(Venta.cantidad).desc())
         )
         
         return self.session.exec(statement).all()
+
+
+    def get_detail_store_report_by_brand_using_sql(self,nombre_marca: str,whscodes:list[str], fecha_inicio_mes_anio_actual: str, fecha_fin_mes_anio_actual: str, 
+                                                fecha_inicio_mes_anio_anterior: str, fecha_fin_mes_anio_anterior: str, nivel: str):
+        """Funcion para obtener por medio de una consulta sql el reporte detalle tienda"""
+        # Mapear el nivel a las columnas correspondientes de Producto
+        niveles_validos = {
+            "departamento": [Producto.departamento],
+            "categoria": [Producto.departamento, Producto.categoria],
+            "subcategoria": [Producto.departamento, Producto.categoria, Producto.subcategoria],  
+
+            "genero": [Producto.departamento, Producto.categoria, Producto.subcategoria, Producto.genero], 
+            "talla": [Producto.departamento, Producto.categoria, Producto.subcategoria, Producto.talla], 
+            "disenio": [Producto.departamento, Producto.categoria, Producto.subcategoria, Producto.disenio], 
+            "coleccion": [Producto.departamento, Producto.categoria, Producto.subcategoria, Producto.coleccion], 
+        }
+        
+        # Validar que el nivel sea válido
+        if nivel not in niveles_validos:
+            raise ValueError(f"Nivel inválido: {nivel}. Los niveles válidos son: {list(niveles_validos.keys())}")
+        
+        # Construir las columnas dinámicamente según el nivel
+        columnas_nivel = niveles_validos[nivel]
+
+        # Construccion de la consulta
+
+        statement = (
+            select(
+                *columnas_nivel,  # Las categorías y subcategorías
+
+                # Suma de cantidad de ventas del mes del año anterior
+                func.sum(
+                    case(
+                        (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.cantidad),
+                        else_=0
+                    )
+                ).label('venta_mensual_anio_anterior_cantidad'),
+
+                # Suma de ventas con IVA del mes del año anterior
+                func.sum(
+                    case(
+                        (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.venta_neta_con_iva),
+                        else_=0
+                    )
+                ).label('venta_mensual_anio_anterior_iva'),
+
+                # Suma de cantidad de ventas del mes actual
+                func.sum(
+                    case(
+                        (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.cantidad),
+                        else_=0
+                    )
+                ).label('venta_mensual_anio_actual_cantidad'),
+
+                # Suma de ventas con IVA del mes actual
+                func.sum(
+                    case(
+                        (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.venta_neta_con_iva),
+                        else_=0
+                    )
+                ).label('venta_mensual_anio_actual_iva'),
+
+                # Cálculo de la variación en porcentaje (con protección contra división por cero)
+                func.coalesce(
+                    (
+                        func.sum(
+                            case(
+                                (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.venta_neta_con_iva),
+                                else_=0
+                            )
+                        ) / 
+                        func.nullif(
+                            func.sum(
+                                case(
+                                    (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.venta_neta_con_iva),
+                                    else_=0
+                                )
+                            ), 0
+                        )
+                    ) - 1
+                ).label('variacion_mes_porcentaje'),
+
+                # Cálculo de la variación en efectivo
+                (
+                    func.sum(
+                        case(
+                            (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.venta_neta_con_iva),
+                            else_=0
+                        )
+                    ) - func.sum(
+                        case(
+                            (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.venta_neta_con_iva),
+                            else_=0
+                        )
+                    )
+                ).label('variacion_mes_efectivo')
+            )
+            .select_from(Venta)
+            .join(Tienda, Tienda.whscode == Venta.whscode)
+            .join(Marca, Tienda.id_marca == Marca.id_marca)
+            .join(Producto, Venta.id_producto == Producto.id_producto)
+            .where(
+                Tienda.whscode.in_(whscodes),
+                Marca.nombre == nombre_marca
+            )
+            .group_by(*columnas_nivel)
+            .having(
+                and_(
+                    func.sum(Venta.cantidad) > 0,
+                    func.sum(Venta.venta_neta_con_iva) > 0
+                )
+            )
+            .order_by(func.sum(Venta.cantidad).desc())
+        )
+
+        return self.session.exec(statement).all()
+    
