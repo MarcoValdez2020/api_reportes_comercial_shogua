@@ -222,3 +222,108 @@ class VentaService:
             except Exception as e:
                 # Log de la excepción para saber el error
                 print(f"Error al obtener registros: {e}")
+
+
+    def get_hierarchical_sales_report(self, nombre_marca: str, whscodes: list[str], fecha_inicio_mes_anio_actual: str, fecha_fin_mes_anio_actual: str, 
+                                fecha_inicio_mes_anio_anterior: str, fecha_fin_mes_anio_anterior: str):
+        """Funcion para traer el reporte de detalle venta"""
+        with UnitOfWork() as uow:
+            # Intenta la operacion en la bd
+            try:
+                # Hacemos la peticion al repositorio
+                data =  uow.venta_repository.get_hierarchical_sales_report(
+                    nombre_marca, whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
+                    fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior
+                )
+                
+                resultado = []
+
+                # Mapa para almacenar las categorías y subcategorías
+                departamentos = {}
+
+                # Primero, creamos los departamentos
+                for row in data:
+                    nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_porcentaje, variacion_efectivo = row
+
+                    if nivel == "DEPARTAMENTO":
+                        # Si el departamento no existe en el mapa, lo creamos
+                        if key not in departamentos:
+                            departamentos[key] = {
+                                "nivel": "DEPARTAMENTO",
+                                "key": key,
+                                "data": {
+                                    "nombre": nombre,
+                                    "venta_mensual_anio_anterior_cantidad": cantidad_anio_anterior,
+                                    "venta_mensual_anio_anterior_iva": iva_anio_anterior,
+                                    "venta_mensual_anio_actual_cantidad":cantidad_anio_actual,
+                                    "venta_mensual_anio_actual_iva": iva_anio_actual,
+                                    "variacion_mes_porcentaje": variacion_porcentaje,
+                                    "variacion_mes_efectivo": variacion_efectivo,
+                                },
+                                "children": []
+                            }
+                
+                # Ahora agregamos las categorías a los departamentos existentes
+                for row in data:
+                    nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_porcentaje, variacion_efectivo = row
+
+                    # Creando el diccionario para cada nivel
+                    item = {
+                        "nivel": nivel,
+                        "key": key,
+                        "data": {
+                            "nombre": nombre,
+                            "venta_mensual_anio_anterior_cantidad": cantidad_anio_anterior,
+                            "venta_mensual_anio_anterior_iva": iva_anio_anterior,
+                            "venta_mensual_anio_actual_cantidad": cantidad_anio_actual,
+                            "venta_mensual_anio_actual_iva": iva_anio_actual,
+                            "variacion_mes_porcentaje": variacion_porcentaje,
+                            "variacion_mes_efectivo": variacion_efectivo,
+                        },
+                        "children": []
+                    }
+
+                    # Si el nivel es CATEGORIA
+                    if nivel == "CATEGORIA":
+                        # Encuentra el departamento al que pertenece la categoría
+                        departamento_key = key.split("-")[0]  # Suponiendo que la clave de categoría tiene formato "DEPARTAMENTO-CATEGORIA"
+                        departamento = departamentos.get(departamento_key)
+                        
+                        if departamento:
+                            departamento["children"].append(item)
+                        else:
+                            # Si no hay departamento, lo creamos con valores predeterminados
+                            departamentos[departamento_key] = {
+                                "nivel": "DEPARTAMENTO",
+                                "key": departamento_key,
+                                "data": {
+                                    "nombre": departamento_key,
+                                    "venta_mensual_anio_anterior_cantidad": cantidad_anio_anterior,
+                                    "venta_mensual_anio_anterior_iva": iva_anio_anterior,
+                                    "venta_mensual_anio_actual_cantidad": cantidad_anio_actual,
+                                    "venta_mensual_anio_actual_iva":iva_anio_actual,
+                                    "variacion_mes_porcentaje": variacion_porcentaje,
+                                    "variacion_mes_efectivo": variacion_efectivo,
+                                },
+                                "children": [item]
+                            }
+                
+                # Convertimos los departamentos en una lista para el resultado final
+                resultado = list(departamentos.values())
+
+                # Filtramos departamentos que no tienen categorías asociadas (si sus valores son todos 0)
+                resultado = [
+                    departamento for departamento in resultado 
+                    if any(child["data"]["venta_mensual_anio_actual_cantidad"] != "0" for child in departamento["children"])
+                ]
+
+                # Filtramos departamentos que solo contienen categorías con 0 en ventas
+                resultado = [
+                    departamento for departamento in resultado
+                    if any(child["data"]["venta_mensual_anio_actual_cantidad"] != "0" or child["data"]["venta_mensual_anio_actual_iva"] != "0" for child in departamento["children"])
+                ]
+
+                return resultado
+            except Exception as e:
+                # Log de la excepción para saber el error
+                print(f"Error al obtener registros: {e}")

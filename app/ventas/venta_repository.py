@@ -1,7 +1,7 @@
 import pandas as pd
 from sqlmodel import Session,select, and_
 from datetime import date
-from sqlalchemy import func, select, func, cast, DECIMAL, distinct, or_, case
+from sqlalchemy import func, literal, select, func, cast, DECIMAL, distinct, or_, case
 from sqlalchemy.sql import text
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -226,8 +226,9 @@ class VentaRepository:
         return self.session.exec(statement).all()
 
 
-    def get_detail_store_report_by_brand_using_sql(self,nombre_marca: str,whscodes:list[str], fecha_inicio_mes_anio_actual: str, fecha_fin_mes_anio_actual: str, 
-                                                fecha_inicio_mes_anio_anterior: str, fecha_fin_mes_anio_anterior: str, nivel: str):
+    def get_detail_store_report_by_brand_using_sql(self,nombre_marca: str,whscodes:list[str], fecha_inicio_mes_anio_actual: str,
+                                                fecha_fin_mes_anio_actual: str, fecha_inicio_mes_anio_anterior: str,
+                                                fecha_fin_mes_anio_anterior: str, nivel: str):
         """Funcion para obtener por medio de una consulta sql el reporte detalle tienda"""
         # Mapear el nivel a las columnas correspondientes de Producto
         niveles_validos = {
@@ -341,3 +342,168 @@ class VentaRepository:
 
         return self.session.exec(statement).all()
     
+
+    def get_hierarchical_sales_report(
+        self,
+        nombre_marca: str,
+        whscodes: list[str],
+        fecha_inicio_mes_anio_actual: str,
+        fecha_fin_mes_anio_actual: str,
+        fecha_inicio_mes_anio_anterior: str,
+        fecha_fin_mes_anio_anterior: str
+    ):
+        """
+        Genera un reporte jerárquico de ventas (departamento -> categoría -> subcategoría)
+        considerando las ventas del año anterior y el año actual.
+        """
+
+        # Subconsulta para obtener los datos agrupados por categoría y subcategoría
+        subquery_categoria = (
+            select(
+                Producto.departamento,
+                Producto.categoria,
+                Producto.subcategoria,
+
+                # Ventas año anterior
+                func.sum(
+                    case(
+                        (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.cantidad),
+                        else_=0
+                    )
+                ).label('venta_mensual_anio_anterior_cantidad'),
+                func.sum(
+                    case(
+                        (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.venta_neta_con_iva),
+                        else_=0
+                    )
+                ).label('venta_mensual_anio_anterior_iva'),
+
+                # Ventas año actual
+                func.sum(
+                    case(
+                        (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.cantidad),
+                        else_=0
+                    )
+                ).label('venta_mensual_anio_actual_cantidad'),
+                func.sum(
+                    case(
+                        (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.venta_neta_con_iva),
+                        else_=0
+                    )
+                ).label('venta_mensual_anio_actual_iva'),
+
+                # Variación porcentual y en efectivo
+                func.coalesce(
+                    (
+                        func.sum(
+                            case(
+                                (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.venta_neta_con_iva),
+                                else_=0
+                            )
+                        ) /
+                        func.nullif(
+                            func.sum(
+                                case(
+                                    (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.venta_neta_con_iva),
+                                    else_=0
+                                )
+                            ), 0
+                        ) - 1
+                    ), 0
+                ).label('variacion_porcentaje'),
+                (
+                    func.sum(
+                        case(
+                            (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.venta_neta_con_iva),
+                            else_=0
+                        )
+                    ) - 
+                    func.sum(
+                        case(
+                            (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.venta_neta_con_iva),
+                            else_=0
+                        )
+                    )
+                ).label('variacion_efectivo')
+            )
+            .select_from(Venta)
+            .join(Tienda, Tienda.whscode == Venta.whscode)
+            .join(Marca, Tienda.id_marca == Marca.id_marca)
+            .join(Producto, Venta.id_producto == Producto.id_producto)
+            .where(
+                Tienda.whscode.in_(whscodes),
+                Marca.nombre == nombre_marca
+            )
+            .group_by(Producto.departamento, Producto.categoria, Producto.subcategoria)
+            .having(
+                func.sum(case(
+                    (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.cantidad),
+                    else_=0
+                )) != 0,
+                func.sum(case(
+                    (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.cantidad),
+                    else_=0
+                )) != 0
+            )
+            .cte("CategoriaDatos")
+        )
+
+        # Subconsulta para sumar datos por departamento (excluyendo aquellos con ventas 0 en ambos años)
+        subquery_departamento = (
+            select(
+                subquery_categoria.c.departamento,
+                func.sum(subquery_categoria.c.venta_mensual_anio_anterior_cantidad).label('total_anio_anterior_cantidad'),
+                func.sum(subquery_categoria.c.venta_mensual_anio_anterior_iva).label('total_anio_anterior_iva'),
+                func.sum(subquery_categoria.c.venta_mensual_anio_actual_cantidad).label('total_anio_actual_cantidad'),
+                func.sum(subquery_categoria.c.venta_mensual_anio_actual_iva).label('total_anio_actual_iva'),
+
+                # Variación porcentual y en efectivo
+                func.coalesce(
+                    (
+                        func.sum(subquery_categoria.c.venta_mensual_anio_actual_iva) /
+                        func.nullif(func.sum(subquery_categoria.c.venta_mensual_anio_anterior_iva), 0) - 1
+                    ), 0
+                ).label('variacion_porcentaje'),
+                (
+                    func.sum(subquery_categoria.c.venta_mensual_anio_actual_iva) -
+                    func.sum(subquery_categoria.c.venta_mensual_anio_anterior_iva)
+                ).label('variacion_efectivo')
+            )
+            .group_by(subquery_categoria.c.departamento)
+            .having(
+                func.sum(subquery_categoria.c.venta_mensual_anio_anterior_iva) != 0,
+                func.sum(subquery_categoria.c.venta_mensual_anio_actual_iva) != 0
+            )
+            .cte("DepartamentoTotales")
+        )
+
+        # Consulta final que combina departamentos y categorías, excluyendo departamentos duplicados
+        statement = (
+            select(
+                literal("DEPARTAMENTO").label("nivel"),
+                subquery_departamento.c.departamento.label("key"),
+                subquery_departamento.c.departamento.label("nombre"),
+                subquery_departamento.c.total_anio_anterior_cantidad.label("venta_mensual_anio_anterior_cantidad"),
+                subquery_departamento.c.total_anio_anterior_iva.label("venta_mensual_anio_anterior_iva"),
+                subquery_departamento.c.total_anio_actual_cantidad.label("venta_mensual_anio_actual_cantidad"),
+                subquery_departamento.c.total_anio_actual_iva.label("venta_mensual_anio_actual_iva"),
+                subquery_departamento.c.variacion_porcentaje.label("variacion_porcentaje"),
+                subquery_departamento.c.variacion_efectivo.label("variacion_efectivo")
+            )
+            .union_all(
+                select(
+                    literal("CATEGORIA").label("nivel"),
+                    func.concat(subquery_categoria.c.departamento, "-", subquery_categoria.c.categoria).label("key"),
+                    subquery_categoria.c.categoria.label("nombre"),
+                    subquery_categoria.c.venta_mensual_anio_anterior_cantidad,
+                    subquery_categoria.c.venta_mensual_anio_anterior_iva,
+                    subquery_categoria.c.venta_mensual_anio_actual_cantidad,
+                    subquery_categoria.c.venta_mensual_anio_actual_iva,
+                    subquery_categoria.c.variacion_porcentaje,
+                    subquery_categoria.c.variacion_efectivo
+                )
+            )
+            .order_by("nivel", "key")
+        )
+        # Ejecutar la consulta
+        return self.session.exec(statement).all()

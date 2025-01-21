@@ -1709,11 +1709,12 @@ class ReportService:
         # Evaluamos las marcas, puesto que algunas se agrupan de manera diferente
         if nombre_marca == 'AY GÜEY':
             # pueba sql
-            datos = self.venta_service.get_detail_store_report_by_brand_using_sql(nombre_marca,whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
-                                                fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior,'categoria')
-
-        
-        
+            # datos = self.venta_service.get_detail_store_report_by_brand_using_sql(nombre_marca,whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
+            #                                     fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior,'categoria')
+            datos = self.venta_service.get_hierarchical_sales_report(nombre_marca,whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
+                                                fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior)
+        datos = self.venta_service.get_hierarchical_sales_report(nombre_marca,whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
+                                                fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior)
         
         return datos
 
