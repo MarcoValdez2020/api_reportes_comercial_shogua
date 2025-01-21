@@ -162,187 +162,9 @@ class VentaRepository:
             print(f'Fallo al obtener los años con ventas de una marca: {e}')
             return []
         
+    #* Funciones para las ventas a detalle tienda
 
-    def get_grouped_sales_by_level_by_brand(self, nombre_marca: str, fecha_inicio: str, fecha_fin: str, nivel: str):
-        """
-        Obtiene las ventas agrupadas por nivel (departamento, categoría, subcategoría) de una marca.
-
-        Args:
-            nombre_marca (str): El nombre de la marca por la cual filtrar los datos.
-            fecha_inicio (str): La fecha de inicio para filtrar las ventas (formato 'YYYY-MM-DD').
-            fecha_fin (str): La fecha de fin para filtrar las ventas (formato 'YYYY-MM-DD').
-            nivel (str): Nivel de agrupación. Puede ser 'departamento', 'categoria' o 'subcategoria'.
-
-        Returns:
-            List[dict]: Lista de resultados con las ventas agrupadas por nivel, incluyendo cantidades y totales.
-
-        Raises:
-            ValueError: Si el nivel proporcionado no es válido.
-        """
-        # Mapear el nivel a las columnas correspondientes de Producto
-        niveles_validos = {
-            "departamento": [Producto.departamento],
-            "categoria": [Producto.departamento, Producto.categoria],
-            "subcategoria": [Producto.departamento, Producto.categoria, Producto.subcategoria],  
-
-            "genero": [Producto.departamento, Producto.categoria, Producto.subcategoria, Producto.genero], 
-            "talla": [Producto.departamento, Producto.categoria, Producto.subcategoria, Producto.talla], 
-            "disenio": [Producto.departamento, Producto.categoria, Producto.subcategoria, Producto.disenio], 
-            "coleccion": [Producto.departamento, Producto.categoria, Producto.subcategoria, Producto.coleccion], 
-        }
-        
-        # Validar que el nivel sea válido
-        if nivel not in niveles_validos:
-            raise ValueError(f"Nivel inválido: {nivel}. Los niveles válidos son: {list(niveles_validos.keys())}")
-        
-        # Construir las columnas dinámicamente según el nivel
-        columnas_nivel = niveles_validos[nivel]
-        
-        # Crear la consulta con las columnas dinámicas
-        statement = (
-            select(
-                Tienda.whscode,
-                *columnas_nivel,
-                func.sum(Venta.cantidad).label('total_cantidad'),
-                func.sum(Venta.venta_neta_con_iva).label('total_efectivo_con_iva')
-            )
-            .join(Tienda, Venta.whscode == Tienda.whscode)
-            .join(Marca, Tienda.id_marca == Marca.id_marca)
-            .join(Producto, Venta.id_producto == Producto.id_producto)
-            .where(
-                Marca.nombre == nombre_marca,
-                Venta.fecha.between(fecha_inicio, fecha_fin)
-            )
-            .group_by(Tienda.whscode, *columnas_nivel)
-            .having(
-                and_(
-                    func.sum(Venta.cantidad) > 0,
-                    func.sum(Venta.venta_neta_con_iva) > 0
-                )
-            )
-            .order_by(func.sum(Venta.cantidad).desc())
-        )
-        
-        return self.session.exec(statement).all()
-
-
-    def get_detail_store_report_by_brand_using_sql(self,nombre_marca: str,whscodes:list[str], fecha_inicio_mes_anio_actual: str,
-                                                fecha_fin_mes_anio_actual: str, fecha_inicio_mes_anio_anterior: str,
-                                                fecha_fin_mes_anio_anterior: str, nivel: str):
-        """Funcion para obtener por medio de una consulta sql el reporte detalle tienda"""
-        # Mapear el nivel a las columnas correspondientes de Producto
-        niveles_validos = {
-            "departamento": [Producto.departamento],
-            "categoria": [Producto.departamento, Producto.categoria],
-            "subcategoria": [Producto.departamento, Producto.categoria, Producto.subcategoria],  
-
-            "genero": [Producto.departamento, Producto.categoria, Producto.subcategoria, Producto.genero], 
-            "talla": [Producto.departamento, Producto.categoria, Producto.subcategoria, Producto.talla], 
-            "disenio": [Producto.departamento, Producto.categoria, Producto.subcategoria, Producto.disenio], 
-            "coleccion": [Producto.departamento, Producto.categoria, Producto.subcategoria, Producto.coleccion], 
-        }
-        
-        # Validar que el nivel sea válido
-        if nivel not in niveles_validos:
-            raise ValueError(f"Nivel inválido: {nivel}. Los niveles válidos son: {list(niveles_validos.keys())}")
-        
-        # Construir las columnas dinámicamente según el nivel
-        columnas_nivel = niveles_validos[nivel]
-
-        # Construccion de la consulta
-
-        statement = (
-            select(
-                *columnas_nivel,  # Las categorías y subcategorías
-
-                # Suma de cantidad de ventas del mes del año anterior
-                func.sum(
-                    case(
-                        (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.cantidad),
-                        else_=0
-                    )
-                ).label('venta_mensual_anio_anterior_cantidad'),
-
-                # Suma de ventas con IVA del mes del año anterior
-                func.sum(
-                    case(
-                        (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.venta_neta_con_iva),
-                        else_=0
-                    )
-                ).label('venta_mensual_anio_anterior_iva'),
-
-                # Suma de cantidad de ventas del mes actual
-                func.sum(
-                    case(
-                        (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.cantidad),
-                        else_=0
-                    )
-                ).label('venta_mensual_anio_actual_cantidad'),
-
-                # Suma de ventas con IVA del mes actual
-                func.sum(
-                    case(
-                        (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.venta_neta_con_iva),
-                        else_=0
-                    )
-                ).label('venta_mensual_anio_actual_iva'),
-
-                # Cálculo de la variación en porcentaje (con protección contra división por cero)
-                func.coalesce(
-                    (
-                        func.sum(
-                            case(
-                                (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.venta_neta_con_iva),
-                                else_=0
-                            )
-                        ) / 
-                        func.nullif(
-                            func.sum(
-                                case(
-                                    (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.venta_neta_con_iva),
-                                    else_=0
-                                )
-                            ), 0
-                        )
-                    ) - 1
-                ).label('variacion_mes_porcentaje'),
-
-                # Cálculo de la variación en efectivo
-                (
-                    func.sum(
-                        case(
-                            (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.venta_neta_con_iva),
-                            else_=0
-                        )
-                    ) - func.sum(
-                        case(
-                            (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.venta_neta_con_iva),
-                            else_=0
-                        )
-                    )
-                ).label('variacion_mes_efectivo')
-            )
-            .select_from(Venta)
-            .join(Tienda, Tienda.whscode == Venta.whscode)
-            .join(Marca, Tienda.id_marca == Marca.id_marca)
-            .join(Producto, Venta.id_producto == Producto.id_producto)
-            .where(
-                Tienda.whscode.in_(whscodes),
-                Marca.nombre == nombre_marca
-            )
-            .group_by(*columnas_nivel)
-            .having(
-                and_(
-                    func.sum(Venta.cantidad) > 0,
-                    func.sum(Venta.venta_neta_con_iva) > 0
-                )
-            )
-            .order_by(func.sum(Venta.cantidad).desc())
-        )
-
-        return self.session.exec(statement).all()
-    
-
+    # Función para obtener el reporte de detalle tienda
     def get_hierarchical_sales_report(
         self,
         nombre_marca: str,
@@ -523,3 +345,58 @@ class VentaRepository:
         )
         # Ejecutar la consulta
         return self.session.exec(statement).all()
+    
+    # Funciones para filtrar los campos de detalle tienda
+    def filtrar_campos_detalle_tienda(
+            self,
+            whscodes: list[str], 
+            fecha_inicio_mes_anio_actual: str,
+            fecha_fin_mes_anio_actual: str,
+            fecha_inicio_mes_anio_anterior: str,
+            fecha_fin_mes_anio_anterior: str,
+            tallas:list[str] = None, 
+            generos:list[str] = None, 
+            disenios:list[str] = None, 
+            colecciones:list[str] = None): 
+        """Función para ir filtrando los campos del front-end segun el o los parametros seleccionados (genero, coleccion, talla y diseño)"""
+        
+        # Base de la consulta
+        query = (
+            select(
+                Producto.talla,
+                Producto.genero,
+                Producto.disenio,
+                Producto.coleccion
+            )
+            .select_from(Venta)
+            .join(Tienda, Tienda.whscode == Venta.whscode)
+            .join(Producto, Venta.id_producto == Producto.id_producto)
+            .where(
+                Tienda.whscode.in_(whscodes),
+                or_(
+                    Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual),
+                    Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior)
+                )
+            )
+        )
+
+        # Filtros dinámicos multiselect
+        if tallas and len(tallas) > 0:
+            query = query.where(Producto.talla.in_(tallas))
+        if disenios and len(disenios) > 0:
+            query = query.where(Producto.disenio.in_(disenios))
+        if generos and len(generos) > 0:
+            query = query.where(Producto.genero.in_(generos))
+        if colecciones and len(colecciones) > 0:
+            query = query.where(Producto.coleccion.in_(colecciones))
+
+        # Asegurar combinaciones únicas
+        query = query.distinct().order_by(
+            Producto.talla,
+            Producto.genero,
+            Producto.disenio,
+            Producto.coleccion
+        )
+
+        # Ejecutar la consulta
+        return self.session.exec(query).all()
