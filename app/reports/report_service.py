@@ -1713,8 +1713,6 @@ class ReportService:
             #                                     fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior,'categoria')
             datos = self.venta_service.get_hierarchical_sales_report(nombre_marca,whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
                                                 fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior)
-        datos = self.venta_service.get_hierarchical_sales_report(nombre_marca,whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
-                                                fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior)
-        
+                            
         return datos
 
