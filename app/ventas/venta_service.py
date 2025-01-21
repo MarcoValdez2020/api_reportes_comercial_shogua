@@ -225,7 +225,8 @@ class VentaService:
 
 
     def get_hierarchical_sales_report(self, nombre_marca: str, whscodes: list[str], fecha_inicio_mes_anio_actual: str, fecha_fin_mes_anio_actual: str, 
-                                fecha_inicio_mes_anio_anterior: str, fecha_fin_mes_anio_anterior: str):
+                                fecha_inicio_mes_anio_anterior: str, fecha_fin_mes_anio_anterior: str, tallas: list[str] = None,
+                                generos: list[str] = None, disenios: list[str] = None, colecciones: list[str] = None):
         """Funcion para traer el reporte de detalle venta"""
         with UnitOfWork() as uow:
             # Intenta la operacion en la bd
@@ -233,7 +234,7 @@ class VentaService:
                 # Hacemos la peticion al repositorio
                 data =  uow.venta_repository.get_hierarchical_sales_report(
                     nombre_marca, whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
-                    fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior
+                    fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior, tallas=tallas, generos=generos, disenios=disenios, colecciones=colecciones
                 )
                 
                 resultado = []

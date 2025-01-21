@@ -350,12 +350,32 @@ class VentaRepository:
         fecha_inicio_mes_anio_actual: str,
         fecha_fin_mes_anio_actual: str,
         fecha_inicio_mes_anio_anterior: str,
-        fecha_fin_mes_anio_anterior: str
+        fecha_fin_mes_anio_anterior: str,
+        tallas: list[str] = None,
+        generos: list[str] = None,
+        disenios: list[str] = None,
+        colecciones: list[str] = None
     ):
         """
         Genera un reporte jerárquico de ventas (departamento -> categoría -> subcategoría)
-        considerando las ventas del año anterior y el año actual.
+        considerando las ventas del año anterior y el año actual, filtrando por tallas, géneros y diseños.
         """
+
+        # Crear una lista de condiciones dinámicamente
+        condiciones = [
+            Tienda.whscode.in_(whscodes),
+            Marca.nombre == nombre_marca,
+        ]
+
+        # Agrega filtros dinámicamente si las listas no son None o vacías
+        if tallas:
+            condiciones.append(Producto.talla.in_(tallas))
+        if generos:
+            condiciones.append(Producto.genero.in_(generos))
+        if disenios:
+            condiciones.append(Producto.disenio.in_(disenios))
+        if colecciones:
+            condiciones.append(Producto.coleccion.in_(colecciones))
 
         # Subconsulta para obtener los datos agrupados por categoría y subcategoría
         subquery_categoria = (
@@ -430,10 +450,7 @@ class VentaRepository:
             .join(Tienda, Tienda.whscode == Venta.whscode)
             .join(Marca, Tienda.id_marca == Marca.id_marca)
             .join(Producto, Venta.id_producto == Producto.id_producto)
-            .where(
-                Tienda.whscode.in_(whscodes),
-                Marca.nombre == nombre_marca
-            )
+            .where(*condiciones)  # Aplicar condiciones
             .group_by(Producto.departamento, Producto.categoria, Producto.subcategoria)
             .having(
                 func.sum(case(
@@ -447,7 +464,6 @@ class VentaRepository:
             )
             .cte("CategoriaDatos")
         )
-
         # Subconsulta para sumar datos por departamento (excluyendo aquellos con ventas 0 en ambos años)
         subquery_departamento = (
             select(

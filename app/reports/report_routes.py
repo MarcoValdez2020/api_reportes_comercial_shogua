@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from datetime import date
-from typing import List
+from typing import List, Optional
 
 import traceback
 
@@ -115,8 +115,12 @@ async def get_month_end_report_penguin(
         raise HTTPException(status_code=500, detail="Error interno del servidor")
     
 
-class WhscodeList(BaseModel):
+class StoreDetailBodyList(BaseModel):
     whscodes: List[str]
+    tallas : Optional[List[str]] = None
+    generos : Optional[List[str]] = None
+    colecciones : Optional[List[str]] = None
+    disenios : Optional[List[str]] = None
 
 @router.post("/get-store-detail-report")
 async def get_store_detail_report(
@@ -124,15 +128,24 @@ async def get_store_detail_report(
     mes: str,
     anio: int,
     tipo_inventario: str,
-    whscodes: WhscodeList  # Cuerpo JSON esperado
+    storeBody: StoreDetailBodyList  # Cuerpo JSON esperado
 ):
     try:
         # Extraer la lista de whscodes
-        whscodes_list = whscodes.whscodes
+        whscodes_list = storeBody.whscodes
+        # Extraer la lista de tallas
+        tallas_list = storeBody.tallas
+        # Extraer la lista de generos
+        generos_list = storeBody.generos
+        # Extraer la lista de colecciones
+        colecciones_list = storeBody.colecciones
+        # Extraer la lista de diseños
+        disenios_list = storeBody.disenios
+
 
         # Lógica del servicio
         detalle_tienda = report_service.obtener_reporte_detalle_tienda(
-            nombre_marca, mes, anio, tipo_inventario, whscodes_list
+            nombre_marca, mes, anio, tipo_inventario, whscodes_list, tallas_list, generos_list, colecciones_list, disenios_list
         )
         return detalle_tienda
 

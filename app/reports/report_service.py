@@ -1632,7 +1632,8 @@ class ReportService:
 
     #? Funciones para reporte de cierre de mes detalle tienda
     # Funcion para obtener el reporte de detalle tienda de mes de todas las marcas 
-    def obtener_reporte_detalle_tienda(self,nombre_marca:str, mes:str, anio:int, tipo_inventario:str, whscodes: list[str]):
+    def obtener_reporte_detalle_tienda(self,nombre_marca:str, mes:str, anio:int, tipo_inventario:str, whscodes: list[str],
+                                        tallas: list[str], generos: list[str], colecciones: list[str], disenios: list[str]):
         """Función para obtener el reporte de detalle tiendas en un periodo de mes"""
 
         #* Generamos la fecha en base al mes y año recibidos como parametro
@@ -1712,7 +1713,11 @@ class ReportService:
             # datos = self.venta_service.get_detail_store_report_by_brand_using_sql(nombre_marca,whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
             #                                     fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior,'categoria')
             datos = self.venta_service.get_hierarchical_sales_report(nombre_marca,whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
+                                                fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior, tallas=tallas, generos=generos, disenios=disenios, colecciones=colecciones)
+        if nombre_marca == 'MUMUSO':
+            datos = self.venta_service.get_hierarchical_sales_report(nombre_marca,whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
                                                 fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior)
+            
                             
         return datos
 
