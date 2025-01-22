@@ -150,79 +150,7 @@ class VentaService:
                     raise HTTPException(status_code=500, detail="Error al obtener registros")
 
 
-    def get_grouped_sales_by_level_by_brand(self,nombre_marca:str, fecha_inicio:str, fecha_fin:str, nivel:str):
-            with UnitOfWork() as uow:
-                # Intenta la operacion en la bd
-                try:
-                    # Hacemos la peticion al repositorio
-                    data =  uow.venta_repository.get_grouped_sales_by_level_by_brand(nombre_marca,fecha_inicio,fecha_fin, nivel)
-                    
-                    # Definimos los niveles validos
-                    niveles_validos = {
-                        "departamento": ["departamento"],
-                        "categoria": ["departamento", "categoria"],
-                        "subcategoria": ["departamento", "categoria", "subcategoria"], 
-                        
-                        "genero": ["departamento", "categoria", "subcategoria", "genero"],                    
-                        "talla": ["departamento", "categoria", "subcategoria", "talla"],                    
-                        "disenio": ["departamento", "categoria", "subcategoria", "genero"],                    
-                        "coleccion": ["departamento", "categoria", "subcategoria", "genero"]
-                    }                   
-                    # Basados en el nivel seleccionamos las keys de nuestro objeto
-                    columnas_nivel = niveles_validos[nivel]
-                    # Concatenamos el objeto completo
-                    keys = ["whscode"] + columnas_nivel + ["total_cantidad", "total_efectivo_con_iva"]
-
-
-                    # Convertir todas las tuplas a diccionarios
-                    resultados = [dict(zip(keys, row)) for row in data]
-                    return resultados
-                except Exception as e:
-                        # Log de la excepción para saber el error
-                        print(f"Error al obtener registros: {e}")
-
     #? Funciones para trabajar con datos
-
-    def get_detail_store_report_by_brand_using_sql(self,nombre_marca: str,whscodes:list[str], fecha_inicio_mes_anio_actual: str, fecha_fin_mes_anio_actual: str, 
-                                                fecha_inicio_mes_anio_anterior: str, fecha_fin_mes_anio_anterior: str, nivel: str):
-        """Funcion para traer el reporte de detalle venta"""
-        with UnitOfWork() as uow:
-            # Intenta la operacion en la bd
-            try:
-                # Hacemos la peticion al repositorio
-                data =  uow.venta_repository.get_detail_store_report_by_brand_using_sql(nombre_marca,whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
-                                                fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior, nivel)
-                # Definimos los niveles validos
-                niveles_validos = {
-                    "departamento": ["departamento"],
-                    "categoria": ["departamento", "categoria"],
-                    "subcategoria": ["departamento", "categoria", "subcategoria"], 
-                        
-                    "genero": ["departamento", "categoria", "subcategoria", "genero"],                    
-                    "talla": ["departamento", "categoria", "subcategoria", "talla"],                    
-                    "disenio": ["departamento", "categoria", "subcategoria", "genero"],                    
-                    "coleccion": ["departamento", "categoria", "subcategoria", "genero"]
-                }                   
-                # Basados en el nivel seleccionamos las keys de nuestro objeto
-                columnas_nivel = niveles_validos[nivel]
-                columnas_detalle = [
-                    'venta_mensual_anio_anterior_cantidad',
-                    'venta_mensual_anio_anterior_iva',
-                    'venta_mensual_anio_actual_cantidad',
-                    'venta_mensual_anio_actual_iva',
-                    'variacion_mes_porcentaje',
-                    'variacion_mes_efectivo'
-                ]
-                # Concatenamos el objeto completo
-                keys = columnas_nivel + columnas_detalle
-
-                # Convertir todas las tuplas a diccionarios
-                resultados = [dict(zip(keys, row)) for row in data]
-                return resultados
-            except Exception as e:
-                # Log de la excepción para saber el error
-                print(f"Error al obtener registros: {e}")
-
 
     def get_hierarchical_sales_report(self, nombre_marca: str, whscodes: list[str], fecha_inicio_mes_anio_actual: str, fecha_fin_mes_anio_actual: str, 
                                 fecha_inicio_mes_anio_anterior: str, fecha_fin_mes_anio_anterior: str, tallas: list[str] = None,
@@ -325,6 +253,39 @@ class VentaService:
                 ]
 
                 return resultado
+            except Exception as e:
+                # Log de la excepción para saber el error
+                print(f"Error al obtener registros: {e}")
+
+
+    def filtrar_campos_detalle_tienda(
+            self,
+            whscodes: list[str], 
+            fecha_inicio_mes_anio_actual: str,
+            fecha_fin_mes_anio_actual: str,
+            fecha_inicio_mes_anio_anterior: str,
+            fecha_fin_mes_anio_anterior: str,
+            tallas:list[str] = None, 
+            generos:list[str] = None, 
+            disenios:list[str] = None, 
+            colecciones:list[str] = None):
+        """Función para obtener las combinaciones posibles de generos, tiendas y diseños """
+        with UnitOfWork() as uow:
+            # Intenta la operacion en la bd
+            try:
+                # Hacemos la peticion al repositorio
+                data =  uow.venta_repository.filtrar_campos_detalle_tienda(
+                    whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, fecha_inicio_mes_anio_anterior, 
+                    fecha_fin_mes_anio_anterior, tallas=tallas, generos=generos, disenios=disenios, colecciones=colecciones
+                )
+
+                # Claves para el diccionario
+                keys = ["talla", "genero", "disenio", "coleccion"]
+
+                # Convertir a lista de diccionarios
+                response = [dict(zip(keys, row)) for row in data]
+
+                return response
             except Exception as e:
                 # Log de la excepción para saber el error
                 print(f"Error al obtener registros: {e}")

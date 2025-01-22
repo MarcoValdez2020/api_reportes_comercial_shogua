@@ -1721,3 +1721,58 @@ class ReportService:
                             
         return datos
 
+
+    # Funcion para obtener las combinaciones de filtros del detalle tienda
+    def filtrar_campos_detalle_tienda(
+        self,
+        whscodes: list[str], 
+        mes:str,
+        anio:int,
+        tallas:list[str] = None, 
+        generos:list[str] = None, 
+        disenios:list[str] = None, 
+        colecciones:list[str] = None):
+        """ Función para obtener las combinaciones de filtros """
+        
+        # Obtenemos las fechas de inicio y fin de mes de los años anterior y actual
+        fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior = self.convertir_mes_y_anio_a_fechas(mes,anio)
+
+        datos = self.venta_service.filtrar_campos_detalle_tienda(
+            whscodes,fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, fecha_inicio_mes_anio_anterior,
+            fecha_fin_mes_anio_anterior, tallas, generos, disenios, colecciones)
+
+        return datos
+
+
+    def convertir_mes_y_anio_a_fechas(self,mes:str,anio:int):
+        """
+        Función para convertir el mes y año en fechas de inicio de mes y fin de mes de año actual y anterior
+        retornando una tupla con la forma: (fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior)
+        """
+        # Evaluamos el año recibido como parametro y lo asignamos como año actual
+        if anio:
+            anio_actual = int(anio)
+        else:
+            anio_actual = date.today().year
+    
+        anio_anterior = anio_actual-1
+        meses_dict = {
+                'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4,
+                'mayo': 5, 'junio': 6, 'julio': 7, 'agosto': 8,
+                'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12
+            }
+        
+        mes = mes.lower()
+        mes_numero = meses_dict[mes]
+        _,ultimo_dia_mes_anio_actual = calendar.monthrange(anio_actual,mes_numero)
+        _,ultimo_dia_mes_anio_anterior = calendar.monthrange(anio_anterior,mes_numero)
+
+        # Definimos las fechas  de inicio y fin de mes  del año actual
+        fecha_inicio_mes_anio_actual = f'{anio_actual}-{mes_numero:02}-01'
+        fecha_fin_mes_anio_actual =f'{anio_actual}-{mes_numero:02}-{ultimo_dia_mes_anio_actual}'
+        
+        # Definimos las fechas de inicio y fin de mes del año anterior
+        fecha_inicio_mes_anio_anterior = f'{anio_anterior}-{mes_numero:02}-01'
+        fecha_fin_mes_anio_anterior =f'{anio_anterior}-{mes_numero:02}-{ultimo_dia_mes_anio_anterior}'
+
+        return fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior

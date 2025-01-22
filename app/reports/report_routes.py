@@ -154,3 +154,35 @@ async def get_store_detail_report(
     except Exception as e:
         print(f"Error en get_store_detail_report: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
+    
+
+@router.post("/get-store-detail-fields-combinations")
+async def filtrar_campos_detalle_tienda(
+    mes: str,
+    anio: int,
+    storeBody: StoreDetailBodyList  # Cuerpo JSON esperado
+):
+    try:
+        # Extraer la lista de whscodes
+        whscodes_list = storeBody.whscodes
+        # Extraer la lista de tallas
+        tallas_list = storeBody.tallas
+        # Extraer la lista de generos
+        generos_list = storeBody.generos
+        # Extraer la lista de colecciones
+        colecciones_list = storeBody.colecciones
+        # Extraer la lista de diseños
+        disenios_list = storeBody.disenios
+
+
+        # Lógica del servicio
+        combinaciones = report_service.filtrar_campos_detalle_tienda(
+            whscodes_list, mes, anio, tallas_list, generos_list,  disenios_list, colecciones_list
+        )
+        return combinaciones
+
+    except ValueError as e:  # Excepción específica de tu lógica de negocio
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        print(f"Error en get_store_detail_report: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
