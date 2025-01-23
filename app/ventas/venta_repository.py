@@ -201,99 +201,258 @@ class VentaRepository:
         # Unir las condiciones en una cláusula WHERE
         where_clause = " AND ".join(condiciones)
 
-        # Consulta SQL con placeholders
-        query = f"""
-        WITH 
-            variables AS (
-                SELECT
-                    '{fecha_inicio_mes_anio_anterior}'::date AS fecha_inicio_anio_anterior,
-                    '{fecha_fin_mes_anio_anterior}'::date AS fecha_fin_anio_anterior,
-                    '{fecha_inicio_mes_anio_actual}'::date AS fecha_inicio_anio_actual,
-                    '{fecha_fin_mes_anio_actual}'::date AS fecha_fin_anio_actual
-            ),
-            VentasPorProducto AS (
-                SELECT 
-                    producto.departamento,
-                    producto.categoria,
-                    producto.subcategoria,
-                    SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_anterior AND variables.fecha_fin_anio_anterior 
-                            THEN venta.cantidad ELSE 0 END) AS cantidad_anio_anterior,
-                    SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_anterior AND variables.fecha_fin_anio_anterior 
-                            THEN venta.venta_neta_con_iva ELSE 0 END) AS iva_anio_anterior,
-                    SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_actual AND variables.fecha_fin_anio_actual 
-                            THEN venta.cantidad ELSE 0 END) AS cantidad_anio_actual,
-                    SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_actual AND variables.fecha_fin_anio_actual 
-                            THEN venta.venta_neta_con_iva ELSE 0 END) AS iva_anio_actual
-                FROM venta
-                JOIN tienda ON tienda.whscode = venta.whscode
-                JOIN marca ON tienda.id_marca = marca.id_marca
-                JOIN producto ON venta.id_producto = producto.id_producto
-                CROSS JOIN variables
-                WHERE {where_clause}
-                GROUP BY producto.departamento, producto.categoria, producto.subcategoria
-            ),
-            Variaciones AS (
-                SELECT 
-                    departamento,
-                    categoria,
-                    subcategoria,
-                    cantidad_anio_anterior,
-                    iva_anio_anterior,
-                    cantidad_anio_actual,
-                    iva_anio_actual,
-                    COALESCE((iva_anio_actual / NULLIF(iva_anio_anterior, 0)) - 1, 0) * 100 AS variacion_porcentaje,
-                    COALESCE(iva_anio_actual - iva_anio_anterior, 0) AS variacion_efectivo
-                FROM VentasPorProducto
-            ),
-            TotalesPorNivel AS (
-                SELECT 
-                    'DEPARTAMENTO' AS nivel,
-                    departamento AS key,
-                    departamento AS nombre,
-                    SUM(cantidad_anio_anterior) AS cantidad_anio_anterior,
-                    SUM(iva_anio_anterior) AS iva_anio_anterior,
-                    SUM(cantidad_anio_actual) AS cantidad_anio_actual,
-                    SUM(iva_anio_actual) AS iva_anio_actual,
-                    COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100 AS variacion_porcentaje,
-                    COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0) AS variacion_efectivo
-                FROM Variaciones
-                GROUP BY departamento
+        # Condicion de query con marcas
+        if nombre_marca == 'AY GÜEY':
+            # Si la marca es AG el query solo trabajara con el nivel departamento -> categoria
+            query = f"""
+            WITH 
+                variables AS (
+                    SELECT
+                        '{fecha_inicio_mes_anio_anterior}'::date AS fecha_inicio_anio_anterior,
+                        '{fecha_fin_mes_anio_anterior}'::date AS fecha_fin_anio_anterior,
+                        '{fecha_inicio_mes_anio_actual}'::date AS fecha_inicio_anio_actual,
+                        '{fecha_fin_mes_anio_actual}'::date AS fecha_fin_anio_actual
+                ),
+                VentasPorProducto AS (
+                    SELECT 
+                        producto.departamento,
+                        producto.categoria,
+                        SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_anterior AND variables.fecha_fin_anio_anterior 
+                                THEN venta.cantidad ELSE 0 END) AS cantidad_anio_anterior,
+                        SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_anterior AND variables.fecha_fin_anio_anterior 
+                                THEN venta.venta_neta_con_iva ELSE 0 END) AS iva_anio_anterior,
+                        SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_actual AND variables.fecha_fin_anio_actual 
+                                THEN venta.cantidad ELSE 0 END) AS cantidad_anio_actual,
+                        SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_actual AND variables.fecha_fin_anio_actual 
+                                THEN venta.venta_neta_con_iva ELSE 0 END) AS iva_anio_actual
+                    FROM venta
+                    JOIN tienda ON tienda.whscode = venta.whscode
+                    JOIN marca ON tienda.id_marca = marca.id_marca
+                    JOIN producto ON venta.id_producto = producto.id_producto
+                    CROSS JOIN variables
+                    WHERE {where_clause}
+                    GROUP BY producto.departamento, producto.categoria
+                ),
+                Variaciones AS (
+                    SELECT 
+                        departamento,
+                        categoria,
+                        cantidad_anio_anterior,
+                        iva_anio_anterior,
+                        cantidad_anio_actual,
+                        iva_anio_actual,
+                        COALESCE((iva_anio_actual / NULLIF(iva_anio_anterior, 0)) - 1, 0) * 100 AS variacion_porcentaje,
+                        COALESCE(iva_anio_actual - iva_anio_anterior, 0) AS variacion_efectivo
+                    FROM VentasPorProducto
+                ),
+                TotalesPorNivel AS (
+                    SELECT 
+                        'DEPARTAMENTO' AS nivel,
+                        departamento AS key,
+                        departamento AS nombre,
+                        SUM(cantidad_anio_anterior) AS cantidad_anio_anterior,
+                        SUM(iva_anio_anterior) AS iva_anio_anterior,
+                        SUM(cantidad_anio_actual) AS cantidad_anio_actual,
+                        SUM(iva_anio_actual) AS iva_anio_actual,
+                        COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100 AS variacion_porcentaje,
+                        COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0) AS variacion_efectivo
+                    FROM Variaciones
+                    GROUP BY departamento
 
-                UNION ALL
+                    UNION ALL
 
-                SELECT 
-                    'CATEGORIA' AS nivel,
-                    departamento || '-' || COALESCE(categoria, 'SIN CATEGORIA') AS key,
-                    COALESCE(categoria, 'SIN CATEGORIA') AS nombre,
-                    SUM(cantidad_anio_anterior),
-                    SUM(iva_anio_anterior),
-                    SUM(cantidad_anio_actual),
-                    SUM(iva_anio_actual),
-                    COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100,
-                    COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0)
-                FROM Variaciones
-                GROUP BY departamento, categoria
+                    SELECT 
+                        'CATEGORIA' AS nivel,
+                        departamento || '-' || COALESCE(categoria, 'SIN CATEGORIA') AS key,
+                        COALESCE(categoria, 'SIN CATEGORIA') AS nombre,
+                        SUM(cantidad_anio_anterior),
+                        SUM(iva_anio_anterior),
+                        SUM(cantidad_anio_actual),
+                        SUM(iva_anio_actual),
+                        COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100,
+                        COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0)
+                    FROM Variaciones
+                    GROUP BY departamento, categoria
 
-                UNION ALL
+                )
+            SELECT *
+            FROM TotalesPorNivel
+            WHERE (cantidad_anio_actual > 0 OR cantidad_anio_anterior > 0)
+            ORDER BY nivel, key;
+            """
+        elif nombre_marca == 'MUMUSO':
+            # Si la marca es mumuso trabajara con los 3 niveles
 
-                SELECT 
-                    'SUBCATEGORIA' AS nivel,
-                    departamento || '-' || COALESCE(categoria, 'SIN CATEGORIA') || '-' || COALESCE(subcategoria, 'SIN SUBCATEGORIA') AS key,
-                    COALESCE(subcategoria, 'SIN SUBCATEGORIA') AS nombre,
-                    cantidad_anio_anterior,
-                    iva_anio_anterior,
-                    cantidad_anio_actual,
-                    iva_anio_actual,
-                    variacion_porcentaje,
-                    variacion_efectivo
-                FROM Variaciones
-            )
-        SELECT *
-        FROM TotalesPorNivel
-        WHERE (cantidad_anio_actual > 0 OR cantidad_anio_anterior > 0)
-        ORDER BY nivel, key;
-        """
+            # Consulta SQL con placeholders
+            query = f"""
+            WITH 
+                variables AS (
+                    SELECT
+                        '{fecha_inicio_mes_anio_anterior}'::date AS fecha_inicio_anio_anterior,
+                        '{fecha_fin_mes_anio_anterior}'::date AS fecha_fin_anio_anterior,
+                        '{fecha_inicio_mes_anio_actual}'::date AS fecha_inicio_anio_actual,
+                        '{fecha_fin_mes_anio_actual}'::date AS fecha_fin_anio_actual
+                ),
+                VentasPorProducto AS (
+                    SELECT 
+                        producto.departamento,
+                        producto.categoria,
+                        producto.subcategoria,
+                        SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_anterior AND variables.fecha_fin_anio_anterior 
+                                THEN venta.cantidad ELSE 0 END) AS cantidad_anio_anterior,
+                        SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_anterior AND variables.fecha_fin_anio_anterior 
+                                THEN venta.venta_neta_con_iva ELSE 0 END) AS iva_anio_anterior,
+                        SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_actual AND variables.fecha_fin_anio_actual 
+                                THEN venta.cantidad ELSE 0 END) AS cantidad_anio_actual,
+                        SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_actual AND variables.fecha_fin_anio_actual 
+                                THEN venta.venta_neta_con_iva ELSE 0 END) AS iva_anio_actual
+                    FROM venta
+                    JOIN tienda ON tienda.whscode = venta.whscode
+                    JOIN marca ON tienda.id_marca = marca.id_marca
+                    JOIN producto ON venta.id_producto = producto.id_producto
+                    CROSS JOIN variables
+                    WHERE {where_clause}
+                    GROUP BY producto.departamento, producto.categoria, producto.subcategoria
+                ),
+                Variaciones AS (
+                    SELECT 
+                        departamento,
+                        categoria,
+                        subcategoria,
+                        cantidad_anio_anterior,
+                        iva_anio_anterior,
+                        cantidad_anio_actual,
+                        iva_anio_actual,
+                        COALESCE((iva_anio_actual / NULLIF(iva_anio_anterior, 0)) - 1, 0) * 100 AS variacion_porcentaje,
+                        COALESCE(iva_anio_actual - iva_anio_anterior, 0) AS variacion_efectivo
+                    FROM VentasPorProducto
+                ),
+                TotalesPorNivel AS (
+                    SELECT 
+                        'DEPARTAMENTO' AS nivel,
+                        departamento AS key,
+                        departamento AS nombre,
+                        SUM(cantidad_anio_anterior) AS cantidad_anio_anterior,
+                        SUM(iva_anio_anterior) AS iva_anio_anterior,
+                        SUM(cantidad_anio_actual) AS cantidad_anio_actual,
+                        SUM(iva_anio_actual) AS iva_anio_actual,
+                        COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100 AS variacion_porcentaje,
+                        COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0) AS variacion_efectivo
+                    FROM Variaciones
+                    GROUP BY departamento
 
+                    UNION ALL
+
+                    SELECT 
+                        'CATEGORIA' AS nivel,
+                        departamento || '-' || COALESCE(categoria, 'SIN CATEGORIA') AS key,
+                        COALESCE(categoria, 'SIN CATEGORIA') AS nombre,
+                        SUM(cantidad_anio_anterior),
+                        SUM(iva_anio_anterior),
+                        SUM(cantidad_anio_actual),
+                        SUM(iva_anio_actual),
+                        COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100,
+                        COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0)
+                    FROM Variaciones
+                    GROUP BY departamento, categoria
+
+                    UNION ALL
+
+                    SELECT 
+                        'SUBCATEGORIA' AS nivel,
+                        departamento || '-' || COALESCE(categoria, 'SIN CATEGORIA') || '-' || COALESCE(subcategoria, 'SIN SUBCATEGORIA') AS key,
+                        COALESCE(subcategoria, 'SIN SUBCATEGORIA') AS nombre,
+                        cantidad_anio_anterior,
+                        iva_anio_anterior,
+                        cantidad_anio_actual,
+                        iva_anio_actual,
+                        variacion_porcentaje,
+                        variacion_efectivo
+                    FROM Variaciones
+                )
+            SELECT *
+            FROM TotalesPorNivel
+            WHERE (cantidad_anio_actual > 0 OR cantidad_anio_anterior > 0)
+            ORDER BY nivel, key;
+            """
+        else:
+            # Si no es AG ni mumuso entonces se trabaja a nivel categoria y subcategoria
+            query = f"""
+            WITH 
+                variables AS (
+                    SELECT
+                        '{fecha_inicio_mes_anio_anterior}'::date AS fecha_inicio_anio_anterior,
+                        '{fecha_fin_mes_anio_anterior}'::date AS fecha_fin_anio_anterior,
+                        '{fecha_inicio_mes_anio_actual}'::date AS fecha_inicio_anio_actual,
+                        '{fecha_fin_mes_anio_actual}'::date AS fecha_fin_anio_actual
+                ),
+                VentasPorProducto AS (
+                    SELECT 
+                        producto.categoria,
+                        producto.subcategoria,
+                        SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_anterior AND variables.fecha_fin_anio_anterior 
+                                THEN venta.cantidad ELSE 0 END) AS cantidad_anio_anterior,
+                        SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_anterior AND variables.fecha_fin_anio_anterior 
+                                THEN venta.venta_neta_con_iva ELSE 0 END) AS iva_anio_anterior,
+                        SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_actual AND variables.fecha_fin_anio_actual 
+                                THEN venta.cantidad ELSE 0 END) AS cantidad_anio_actual,
+                        SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_actual AND variables.fecha_fin_anio_actual 
+                                THEN venta.venta_neta_con_iva ELSE 0 END) AS iva_anio_actual
+                    FROM venta
+                    JOIN tienda ON tienda.whscode = venta.whscode
+                    JOIN marca ON tienda.id_marca = marca.id_marca
+                    JOIN producto ON venta.id_producto = producto.id_producto
+                    CROSS JOIN variables
+                    WHERE {where_clause}
+                    GROUP BY producto.categoria, producto.subcategoria
+                ),
+                Variaciones AS (
+                    SELECT 
+                        categoria,
+                        subcategoria,
+                        cantidad_anio_anterior,
+                        iva_anio_anterior,
+                        cantidad_anio_actual,
+                        iva_anio_actual,
+                        COALESCE((iva_anio_actual / NULLIF(iva_anio_anterior, 0)) - 1, 0) * 100 AS variacion_porcentaje,
+                        COALESCE(iva_anio_actual - iva_anio_anterior, 0) AS variacion_efectivo
+                    FROM VentasPorProducto
+                ),
+                TotalesPorNivel AS (
+                    SELECT 
+                        'CATEGORIA' AS nivel,
+                        categoria AS key,
+                        categoria AS nombre,
+                        SUM(cantidad_anio_anterior) AS cantidad_anio_anterior,
+                        SUM(iva_anio_anterior) AS iva_anio_anterior,
+                        SUM(cantidad_anio_actual) AS cantidad_anio_actual,
+                        SUM(iva_anio_actual) AS iva_anio_actual,
+                        COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100 AS variacion_porcentaje,
+                        COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0) AS variacion_efectivo
+                    FROM Variaciones
+                    GROUP BY categoria
+
+                    UNION ALL
+
+                    SELECT 
+                        'SUBCATEGORIA' AS nivel,
+                        categoria || '-' || COALESCE(subcategoria, 'SIN CATEGORIA') AS key,
+                        COALESCE(subcategoria, 'SIN CATEGORIA') AS nombre,
+                        SUM(cantidad_anio_anterior),
+                        SUM(iva_anio_anterior),
+                        SUM(cantidad_anio_actual),
+                        SUM(iva_anio_actual),
+                        COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100,
+                        COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0)
+                    FROM Variaciones
+                    GROUP BY categoria, subcategoria
+
+                )
+            SELECT *
+            FROM TotalesPorNivel
+            WHERE (cantidad_anio_actual > 0 OR cantidad_anio_anterior > 0)
+            ORDER BY nivel, key;
+            """
         # Parámetros seguros para la consulta
         params = {
             "nombre_marca": nombre_marca,

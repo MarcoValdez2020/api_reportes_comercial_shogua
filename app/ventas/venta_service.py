@@ -165,89 +165,157 @@ class VentaService:
                     fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior, tallas=tallas, generos=generos, disenios=disenios, colecciones=colecciones
                 )
 
+
                 resultado = []
 
-                # Mapa para almacenar las categorías y subcategorías
-                departamentos = {}
+                # Comparar la marca recibida
+                if nombre_marca == 'AY GÜEY' or nombre_marca == 'MUMUSO':
+                    # Si la marca es AG o MUMUSO entonces tiene departamento
+                    # Mapa para almacenar las categorías y subcategorías
+                    departamentos = {}
 
-                # Primero, creamos los departamentos
-                for row in data:
-                    nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_porcentaje, variacion_efectivo = row
+                    # Primero, creamos los departamentos
+                    for row in data:
+                        nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_porcentaje, variacion_efectivo = row
 
-                    if nivel == "DEPARTAMENTO":
-                        # Si el departamento no existe en el mapa, lo creamos
-                        if key not in departamentos:
-                            departamentos[key] = {
-                                "nivel": "DEPARTAMENTO",
-                                "key": key,
-                                "data": {
-                                    "nombre": nombre,
-                                    "venta_mensual_anio_anterior_cantidad": cantidad_anio_anterior,
-                                    "venta_mensual_anio_anterior_iva": iva_anio_anterior,
-                                    "venta_mensual_anio_actual_cantidad":cantidad_anio_actual,
-                                    "venta_mensual_anio_actual_iva": iva_anio_actual,
-                                    "variacion_mes_porcentaje": variacion_porcentaje,
-                                    "variacion_mes_efectivo": variacion_efectivo,
-                                },
-                                "children": []
-                            }
-                
-                # Mapa para almacenar categorías
-                categorias = {}
+                        if nivel == "DEPARTAMENTO":
+                            # Si el departamento no existe en el mapa, lo creamos
+                            if key not in departamentos:
+                                departamentos[key] = {
+                                    "nivel": "DEPARTAMENTO",
+                                    "key": key,
+                                    "data": {
+                                        "nombre": nombre,
+                                        "venta_mensual_anio_anterior_cantidad": cantidad_anio_anterior,
+                                        "venta_mensual_anio_anterior_iva": iva_anio_anterior,
+                                        "venta_mensual_anio_actual_cantidad":cantidad_anio_actual,
+                                        "venta_mensual_anio_actual_iva": iva_anio_actual,
+                                        "variacion_mes_porcentaje": variacion_porcentaje,
+                                        "variacion_mes_efectivo": variacion_efectivo,
+                                    },
+                                    "children": []
+                                }
+                    
+                    # Mapa para almacenar categorías
+                    categorias = {}
 
-                # Ahora agregamos las categorías y subcategorías
-                for row in data:
-                    nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_porcentaje, variacion_efectivo = row
+                    # Ahora agregamos las categorías y subcategorías
+                    for row in data:
+                        nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_porcentaje, variacion_efectivo = row
 
-                    # Creando el diccionario para cada nivel
-                    item = {
-                        "nivel": nivel,
-                        "key": key,
-                        "data": {
-                            "nombre": nombre,
-                            "venta_mensual_anio_anterior_cantidad": cantidad_anio_anterior,
-                            "venta_mensual_anio_anterior_iva": iva_anio_anterior,
-                            "venta_mensual_anio_actual_cantidad": cantidad_anio_actual,
-                            "venta_mensual_anio_actual_iva": iva_anio_actual,
-                            "variacion_mes_porcentaje": variacion_porcentaje,
-                            "variacion_mes_efectivo": variacion_efectivo,
-                        },
-                        "children": []
-                    }
+                        # Creando el diccionario para cada nivel
+                        item = {
+                            "nivel": nivel,
+                            "key": key,
+                            "data": {
+                                "nombre": nombre,
+                                "venta_mensual_anio_anterior_cantidad": cantidad_anio_anterior,
+                                "venta_mensual_anio_anterior_iva": iva_anio_anterior,
+                                "venta_mensual_anio_actual_cantidad": cantidad_anio_actual,
+                                "venta_mensual_anio_actual_iva": iva_anio_actual,
+                                "variacion_mes_porcentaje": variacion_porcentaje,
+                                "variacion_mes_efectivo": variacion_efectivo,
+                            },
+                            "children": []
+                        }
 
-                    # Si el nivel es CATEGORIA
-                    if nivel == "CATEGORIA":
-                        # Encuentra el departamento al que pertenece la categoría
-                        departamento_key = key.split("-")[0]
-                        departamento = departamentos.get(departamento_key)
+                        # Si el nivel es CATEGORIA
+                        if nivel == "CATEGORIA":
+                            # Encuentra el departamento al que pertenece la categoría
+                            departamento_key = key.split("-")[0]
+                            departamento = departamentos.get(departamento_key)
+                            
+                            if departamento:
+                                departamento["children"].append(item)
+                                categorias[key] = item
+
+                        # Si el nivel es SUBCATEGORIA
+                        elif nivel == "SUBCATEGORIA":
+                            # Encuentra la categoría padre
+                            categoria_key = "-".join(key.split("-")[:2])
+                            categoria = categorias.get(categoria_key)
+                            
+                            if categoria:
+                                categoria["children"].append(item)
+                    
+                    # Convertimos los departamentos en una lista para el resultado final
+                    resultado = list(departamentos.values())
+
+                    # Filtramos departamentos que no tienen categorías asociadas (si sus valores son todos 0)
+                    resultado = [
+                        departamento for departamento in resultado 
+                        if any(child["data"]["venta_mensual_anio_actual_cantidad"] != "0" for child in departamento["children"])
+                    ]
+
+                    # Filtramos departamentos que solo contienen categorías con 0 en ventas
+                    resultado = [
+                        departamento for departamento in resultado
+                        if any(child["data"]["venta_mensual_anio_actual_cantidad"] != "0" or child["data"]["venta_mensual_anio_actual_iva"] != "0" for child in departamento["children"])
+                    ]
+                else:
+
+                    # Mapa para almacenar las categorias
+                    categorias = {}
+
+                    # Primero, creamos las categorias
+                    for row in data:
+                        nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_porcentaje, variacion_efectivo = row
+
+                        if nivel == "CATEGORIA":
+                            # Si el departamento no existe en el mapa, lo creamos
+                            if key not in categorias:
+                                categorias[key] = {
+                                    "nivel": "CATEGORIA",
+                                    "key": key,
+                                    "data": {
+                                        "nombre": nombre,
+                                        "venta_mensual_anio_anterior_cantidad": cantidad_anio_anterior,
+                                        "venta_mensual_anio_anterior_iva": iva_anio_anterior,
+                                        "venta_mensual_anio_actual_cantidad":cantidad_anio_actual,
+                                        "venta_mensual_anio_actual_iva": iva_anio_actual,
+                                        "variacion_mes_porcentaje": variacion_porcentaje,
+                                        "variacion_mes_efectivo": variacion_efectivo,
+                                    },
+                                    "children": []
+                                }
+                    
+                     # Ahora agregamos las categorías y subcategorías
+                    
+
+                    subcategorias = {}
+                    for row in data:
+                        nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_porcentaje, variacion_efectivo = row
+
+                        # Creando el diccionario para cada nivel
+                        item = {
+                            "nivel": nivel,
+                            "key": key,
+                            "data": {
+                                "nombre": nombre,
+                                "venta_mensual_anio_anterior_cantidad": cantidad_anio_anterior,
+                                "venta_mensual_anio_anterior_iva": iva_anio_anterior,
+                                "venta_mensual_anio_actual_cantidad": cantidad_anio_actual,
+                                "venta_mensual_anio_actual_iva": iva_anio_actual,
+                                "variacion_mes_porcentaje": variacion_porcentaje,
+                                "variacion_mes_efectivo": variacion_efectivo,
+                            },
+                            "children": []
+                        }
+
                         
-                        if departamento:
-                            departamento["children"].append(item)
-                            categorias[key] = item
 
-                    # Si el nivel es SUBCATEGORIA
-                    elif nivel == "SUBCATEGORIA":
-                        # Encuentra la categoría padre
-                        categoria_key = "-".join(key.split("-")[:2])
-                        categoria = categorias.get(categoria_key)
-                        
-                        if categoria:
-                            categoria["children"].append(item)
-                
-                # Convertimos los departamentos en una lista para el resultado final
-                resultado = list(departamentos.values())
+                        # Si el nivel es CATEGORIA
+                        if nivel == "SUBCATEGORIA":
+                            # Encuentra la cateogira a la que pertenece la subcategoría
+                            categoria_key = key.split("-")[0]
+                            categoria = categorias.get(categoria_key)
+                            
+                            if categoria:
+                                categoria["children"].append(item)
+                                subcategorias[key] = item
 
-                # Filtramos departamentos que no tienen categorías asociadas (si sus valores son todos 0)
-                resultado = [
-                    departamento for departamento in resultado 
-                    if any(child["data"]["venta_mensual_anio_actual_cantidad"] != "0" for child in departamento["children"])
-                ]
-
-                # Filtramos departamentos que solo contienen categorías con 0 en ventas
-                resultado = [
-                    departamento for departamento in resultado
-                    if any(child["data"]["venta_mensual_anio_actual_cantidad"] != "0" or child["data"]["venta_mensual_anio_actual_iva"] != "0" for child in departamento["children"])
-                ]
+                    # Convertimos las cateogirias en una lista para el resultado final
+                    resultado = list(categorias.values())
 
                 return resultado
             except Exception as e:
