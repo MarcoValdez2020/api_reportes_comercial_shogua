@@ -164,6 +164,8 @@ class VentaService:
                     nombre_marca, whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
                     fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior, tallas=tallas, generos=generos, disenios=disenios, colecciones=colecciones
                 )
+
+                print('data',data)
                 
                 resultado = []
 
@@ -192,7 +194,10 @@ class VentaService:
                                 "children": []
                             }
                 
-                # Ahora agregamos las categorías a los departamentos existentes
+                # Mapa para almacenar categorías
+                categorias = {}
+
+                # Ahora agregamos las categorías y subcategorías
                 for row in data:
                     nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_porcentaje, variacion_efectivo = row
 
@@ -215,27 +220,21 @@ class VentaService:
                     # Si el nivel es CATEGORIA
                     if nivel == "CATEGORIA":
                         # Encuentra el departamento al que pertenece la categoría
-                        departamento_key = key.split("-")[0]  # Suponiendo que la clave de categoría tiene formato "DEPARTAMENTO-CATEGORIA"
+                        departamento_key = key.split("-")[0]
                         departamento = departamentos.get(departamento_key)
                         
                         if departamento:
                             departamento["children"].append(item)
-                        else:
-                            # Si no hay departamento, lo creamos con valores predeterminados
-                            departamentos[departamento_key] = {
-                                "nivel": "DEPARTAMENTO",
-                                "key": departamento_key,
-                                "data": {
-                                    "nombre": departamento_key,
-                                    "venta_mensual_anio_anterior_cantidad": cantidad_anio_anterior,
-                                    "venta_mensual_anio_anterior_iva": iva_anio_anterior,
-                                    "venta_mensual_anio_actual_cantidad": cantidad_anio_actual,
-                                    "venta_mensual_anio_actual_iva":iva_anio_actual,
-                                    "variacion_mes_porcentaje": variacion_porcentaje,
-                                    "variacion_mes_efectivo": variacion_efectivo,
-                                },
-                                "children": [item]
-                            }
+                            categorias[key] = item
+
+                    # Si el nivel es SUBCATEGORIA
+                    elif nivel == "SUBCATEGORIA":
+                        # Encuentra la categoría padre
+                        categoria_key = "-".join(key.split("-")[:2])
+                        categoria = categorias.get(categoria_key)
+                        
+                        if categoria:
+                            categoria["children"].append(item)
                 
                 # Convertimos los departamentos en una lista para el resultado final
                 resultado = list(departamentos.values())
