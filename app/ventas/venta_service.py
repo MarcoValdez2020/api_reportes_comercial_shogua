@@ -165,8 +165,6 @@ class VentaService:
                     fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior, tallas=tallas, generos=generos, disenios=disenios, colecciones=colecciones
                 )
 
-                print('data',data)
-                
                 resultado = []
 
                 # Mapa para almacenar las categorías y subcategorías

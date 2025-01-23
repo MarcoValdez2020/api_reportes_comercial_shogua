@@ -176,176 +176,147 @@ class VentaRepository:
         tallas: list[str] = None,
         generos: list[str] = None,
         disenios: list[str] = None,
-        colecciones: list[str] = None
+        colecciones: list[str] = None,
     ):
         """
-        Genera un reporte jerárquico de ventas (departamento -> categoría -> subcategoría)
-        considerando las ventas del año anterior y el año actual, filtrando por tallas, géneros y diseños.
+        Genera y ejecuta un reporte jerárquico de ventas (departamento -> categoría -> subcategoría)
+        considerando las ventas del año anterior y el año actual, filtrando por tallas, géneros,
+        diseños y colecciones, utilizando parámetros para prevenir SQL Injection.
         """
-
-        # Crear una lista de condiciones dinámicamente
+        # Generar las condiciones dinámicas
         condiciones = [
-            Tienda.whscode.in_(whscodes),
-            Marca.nombre == nombre_marca,
+            "tienda.whscode = ANY (:whscodes)",
+            "marca.nombre = :nombre_marca",
         ]
 
-        # Agrega filtros dinámicamente si las listas no son None o vacías
         if tallas:
-            condiciones.append(Producto.talla.in_(tallas))
+            condiciones.append("producto.talla = ANY (:tallas)")
         if generos:
-            condiciones.append(Producto.genero.in_(generos))
+            condiciones.append("producto.genero = ANY (:generos)")
         if disenios:
-            condiciones.append(Producto.disenio.in_(disenios))
+            condiciones.append("producto.disenio = ANY (:disenios)")
         if colecciones:
-            condiciones.append(Producto.coleccion.in_(colecciones))
+            condiciones.append("producto.coleccion = ANY (:colecciones)")
 
-        # Subconsulta para obtener los datos agrupados por categoría y subcategoría
-        subquery_categoria = (
-            select(
-                Producto.departamento,
-                Producto.categoria,
-                Producto.subcategoria,
+        # Unir las condiciones en una cláusula WHERE
+        where_clause = " AND ".join(condiciones)
 
-                # Ventas año anterior
-                func.sum(
-                    case(
-                        (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.cantidad),
-                        else_=0
-                    )
-                ).label('venta_mensual_anio_anterior_cantidad'),
-                func.sum(
-                    case(
-                        (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.venta_neta_con_iva),
-                        else_=0
-                    )
-                ).label('venta_mensual_anio_anterior_iva'),
+        # Consulta SQL con placeholders
+        query = f"""
+        WITH 
+            variables AS (
+                SELECT
+                    '{fecha_inicio_mes_anio_anterior}'::date AS fecha_inicio_anio_anterior,
+                    '{fecha_fin_mes_anio_anterior}'::date AS fecha_fin_anio_anterior,
+                    '{fecha_inicio_mes_anio_actual}'::date AS fecha_inicio_anio_actual,
+                    '{fecha_fin_mes_anio_actual}'::date AS fecha_fin_anio_actual
+            ),
+            VentasPorProducto AS (
+                SELECT 
+                    producto.departamento,
+                    producto.categoria,
+                    producto.subcategoria,
+                    SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_anterior AND variables.fecha_fin_anio_anterior 
+                            THEN venta.cantidad ELSE 0 END) AS cantidad_anio_anterior,
+                    SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_anterior AND variables.fecha_fin_anio_anterior 
+                            THEN venta.venta_neta_con_iva ELSE 0 END) AS iva_anio_anterior,
+                    SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_actual AND variables.fecha_fin_anio_actual 
+                            THEN venta.cantidad ELSE 0 END) AS cantidad_anio_actual,
+                    SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_actual AND variables.fecha_fin_anio_actual 
+                            THEN venta.venta_neta_con_iva ELSE 0 END) AS iva_anio_actual
+                FROM venta
+                JOIN tienda ON tienda.whscode = venta.whscode
+                JOIN marca ON tienda.id_marca = marca.id_marca
+                JOIN producto ON venta.id_producto = producto.id_producto
+                CROSS JOIN variables
+                WHERE {where_clause}
+                GROUP BY producto.departamento, producto.categoria, producto.subcategoria
+            ),
+            Variaciones AS (
+                SELECT 
+                    departamento,
+                    categoria,
+                    subcategoria,
+                    cantidad_anio_anterior,
+                    iva_anio_anterior,
+                    cantidad_anio_actual,
+                    iva_anio_actual,
+                    COALESCE((iva_anio_actual / NULLIF(iva_anio_anterior, 0)) - 1, 0) * 100 AS variacion_porcentaje,
+                    COALESCE(iva_anio_actual - iva_anio_anterior, 0) AS variacion_efectivo
+                FROM VentasPorProducto
+            ),
+            TotalesPorNivel AS (
+                SELECT 
+                    'DEPARTAMENTO' AS nivel,
+                    departamento AS key,
+                    departamento AS nombre,
+                    SUM(cantidad_anio_anterior) AS cantidad_anio_anterior,
+                    SUM(iva_anio_anterior) AS iva_anio_anterior,
+                    SUM(cantidad_anio_actual) AS cantidad_anio_actual,
+                    SUM(iva_anio_actual) AS iva_anio_actual,
+                    COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100 AS variacion_porcentaje,
+                    COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0) AS variacion_efectivo
+                FROM Variaciones
+                GROUP BY departamento
 
-                # Ventas año actual
-                func.sum(
-                    case(
-                        (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.cantidad),
-                        else_=0
-                    )
-                ).label('venta_mensual_anio_actual_cantidad'),
-                func.sum(
-                    case(
-                        (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.venta_neta_con_iva),
-                        else_=0
-                    )
-                ).label('venta_mensual_anio_actual_iva'),
+                UNION ALL
 
-                # Variación porcentual y en efectivo
-                func.coalesce(
-                    (
-                        func.sum(
-                            case(
-                                (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.venta_neta_con_iva),
-                                else_=0
-                            )
-                        ) /
-                        func.nullif(
-                            func.sum(
-                                case(
-                                    (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.venta_neta_con_iva),
-                                    else_=0
-                                )
-                            ), 0
-                        ) - 1
-                    ), 0
-                ).label('variacion_porcentaje'),
-                (
-                    func.sum(
-                        case(
-                            (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.venta_neta_con_iva),
-                            else_=0
-                        )
-                    ) - 
-                    func.sum(
-                        case(
-                            (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.venta_neta_con_iva),
-                            else_=0
-                        )
-                    )
-                ).label('variacion_efectivo')
-            )
-            .select_from(Venta)
-            .join(Tienda, Tienda.whscode == Venta.whscode)
-            .join(Marca, Tienda.id_marca == Marca.id_marca)
-            .join(Producto, Venta.id_producto == Producto.id_producto)
-            .where(*condiciones)  # Aplicar condiciones
-            .group_by(Producto.departamento, Producto.categoria, Producto.subcategoria)
-            .having(
-                func.sum(case(
-                    (Venta.fecha.between(fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior), Venta.cantidad),
-                    else_=0
-                )) != 0,
-                func.sum(case(
-                    (Venta.fecha.between(fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual), Venta.cantidad),
-                    else_=0
-                )) != 0
-            )
-            .cte("CategoriaDatos")
-        )
-        # Subconsulta para sumar datos por departamento (excluyendo aquellos con ventas 0 en ambos años)
-        subquery_departamento = (
-            select(
-                subquery_categoria.c.departamento,
-                func.sum(subquery_categoria.c.venta_mensual_anio_anterior_cantidad).label('total_anio_anterior_cantidad'),
-                func.sum(subquery_categoria.c.venta_mensual_anio_anterior_iva).label('total_anio_anterior_iva'),
-                func.sum(subquery_categoria.c.venta_mensual_anio_actual_cantidad).label('total_anio_actual_cantidad'),
-                func.sum(subquery_categoria.c.venta_mensual_anio_actual_iva).label('total_anio_actual_iva'),
+                SELECT 
+                    'CATEGORIA' AS nivel,
+                    departamento || '-' || COALESCE(categoria, 'SIN CATEGORIA') AS key,
+                    COALESCE(categoria, 'SIN CATEGORIA') AS nombre,
+                    SUM(cantidad_anio_anterior),
+                    SUM(iva_anio_anterior),
+                    SUM(cantidad_anio_actual),
+                    SUM(iva_anio_actual),
+                    COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100,
+                    COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0)
+                FROM Variaciones
+                GROUP BY departamento, categoria
 
-                # Variación porcentual y en efectivo
-                func.coalesce(
-                    (
-                        func.sum(subquery_categoria.c.venta_mensual_anio_actual_iva) /
-                        func.nullif(func.sum(subquery_categoria.c.venta_mensual_anio_anterior_iva), 0) - 1
-                    ), 0
-                ).label('variacion_porcentaje'),
-                (
-                    func.sum(subquery_categoria.c.venta_mensual_anio_actual_iva) -
-                    func.sum(subquery_categoria.c.venta_mensual_anio_anterior_iva)
-                ).label('variacion_efectivo')
-            )
-            .group_by(subquery_categoria.c.departamento)
-            .having(
-                func.sum(subquery_categoria.c.venta_mensual_anio_anterior_iva) != 0,
-                func.sum(subquery_categoria.c.venta_mensual_anio_actual_iva) != 0
-            )
-            .cte("DepartamentoTotales")
-        )
+                UNION ALL
 
-        # Consulta final que combina departamentos y categorías, excluyendo departamentos duplicados
-        statement = (
-            select(
-                literal("DEPARTAMENTO").label("nivel"),
-                subquery_departamento.c.departamento.label("key"),
-                subquery_departamento.c.departamento.label("nombre"),
-                subquery_departamento.c.total_anio_anterior_cantidad.label("venta_mensual_anio_anterior_cantidad"),
-                subquery_departamento.c.total_anio_anterior_iva.label("venta_mensual_anio_anterior_iva"),
-                subquery_departamento.c.total_anio_actual_cantidad.label("venta_mensual_anio_actual_cantidad"),
-                subquery_departamento.c.total_anio_actual_iva.label("venta_mensual_anio_actual_iva"),
-                subquery_departamento.c.variacion_porcentaje.label("variacion_porcentaje"),
-                subquery_departamento.c.variacion_efectivo.label("variacion_efectivo")
+                SELECT 
+                    'SUBCATEGORIA' AS nivel,
+                    departamento || '-' || COALESCE(categoria, 'SIN CATEGORIA') || '-' || COALESCE(subcategoria, 'SIN SUBCATEGORIA') AS key,
+                    COALESCE(subcategoria, 'SIN SUBCATEGORIA') AS nombre,
+                    cantidad_anio_anterior,
+                    iva_anio_anterior,
+                    cantidad_anio_actual,
+                    iva_anio_actual,
+                    variacion_porcentaje,
+                    variacion_efectivo
+                FROM Variaciones
             )
-            .union_all(
-                select(
-                    literal("CATEGORIA").label("nivel"),
-                    func.concat(subquery_categoria.c.departamento, "-", subquery_categoria.c.categoria).label("key"),
-                    subquery_categoria.c.categoria.label("nombre"),
-                    subquery_categoria.c.venta_mensual_anio_anterior_cantidad,
-                    subquery_categoria.c.venta_mensual_anio_anterior_iva,
-                    subquery_categoria.c.venta_mensual_anio_actual_cantidad,
-                    subquery_categoria.c.venta_mensual_anio_actual_iva,
-                    subquery_categoria.c.variacion_porcentaje,
-                    subquery_categoria.c.variacion_efectivo
-                )
-            )
-            .order_by("nivel", "key")
-        )
-        # Ejecutar la consulta
-        return self.session.exec(statement).all()
+        SELECT *
+        FROM TotalesPorNivel
+        WHERE (cantidad_anio_actual > 0 OR cantidad_anio_anterior > 0)
+        ORDER BY nivel, key;
+        """
+
+        # Parámetros seguros para la consulta
+        params = {
+            "nombre_marca": nombre_marca,
+            "whscodes": whscodes,
+            "fecha_inicio_mes_anio_actual": fecha_inicio_mes_anio_actual,
+            "fecha_fin_mes_anio_actual": fecha_fin_mes_anio_actual,
+            "fecha_inicio_mes_anio_anterior": fecha_inicio_mes_anio_anterior,
+            "fecha_fin_mes_anio_anterior": fecha_fin_mes_anio_anterior,
+            "tallas": tallas,
+            "generos": generos,
+            "disenios": disenios,
+            "colecciones": colecciones,
+        }
+
+        # Convertir la consulta a un objeto SQL seguro
+        query = text(query)
+
+        # Ejecutar la consulta en la base de datos
+        result = self.session.execute(query, params).fetchall()
+
+        return result
     
+
     # Funciones para filtrar los campos de detalle tienda
     def filtrar_campos_detalle_tienda(
             self,
