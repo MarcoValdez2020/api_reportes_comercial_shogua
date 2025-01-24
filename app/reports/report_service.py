@@ -1668,7 +1668,24 @@ class ReportService:
         #* Cargamos las categorias, subcategorias, etc dependiendo la marca      
         datos = self.venta_service.get_hierarchical_sales_report(nombre_marca,whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
                                                 fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior, tallas=tallas, generos=generos, disenios=disenios, colecciones=colecciones)
-                            
+
+        
+        if len(datos) == 0:
+            datos = [{
+                "nivel": "SIN RESULTADOS",
+                "key": "SIN RESULTADOS",
+                "data": {
+                    "nombre": "SIN RESULTADOS",
+                    "venta_mensual_anio_anterior_cantidad": 0,
+                    "venta_mensual_anio_anterior_iva": 0,
+                    "venta_mensual_anio_actual_cantidad": 0,
+                    "venta_mensual_anio_actual_iva": 0,
+                    "variacion_mes_porcentaje": 0,
+                    "variacion_mes_efectivo": 0
+                },
+                "children": []
+            }]
+
         return datos
 
 
