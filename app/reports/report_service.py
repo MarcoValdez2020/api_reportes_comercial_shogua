@@ -1664,60 +1664,8 @@ class ReportService:
         fecha_inicio_mes_anio_anterior = f'{anio_anterior}-{mes_numero:02}-01'
         fecha_fin_mes_anio_anterior =f'{anio_anterior}-{mes_numero:02}-{ultimo_dia_mes_anio_anterior}'
 
-        #* Consultas a la bd
-        # Obtener registros de las tiendas por marca y transformalo en df
-        tiendas = [t.to_dict() for t in self.shared_service.get_all_stores_by_brand_name(nombre_marca)]
-        tiendas_df = pd.DataFrame(tiendas)
 
-        # # Obtener los inventarios de todas las tiendas
-        # # Si el tipo de inventario es 'actual', entonces traemos los inventario de tiendas actuales, pero si es 'cierre-mes' entonces llamamos al historial del inventario del mes seleccionado
-        # if tipo_inventario == 'actual':
-        #     inventarios_tiendas = self.inventario_service.get_store_inventories_total_stock_by_brand_name(nombre_marca)
-        # elif tipo_inventario == 'cierre-mes':
-        #     # Evaluamos que se tenga el inventario con la fecha especificada, si no se retorno nada entonces usar el cierre de mes mas cercano
-        #     lista_historiales_inventarios = self.inventario_service.get_end_month_history_inventory_list(nombre_marca)
-        #     # Buscamos el año y mes dentro del diccionadio de lista_historiales_inventarios
-        #     resultado = None
-        #     for item in lista_historiales_inventarios:
-        #         if item['anio'] == anio:  # Buscamos el año
-        #             for inventario in item['inventario_cierre']:
-        #                 if inventario['name'] == mes.lower():  # Busca el mes dentro de 'inventario_cierre'
-        #                     resultado = inventario
-        #                     break
-        #             if resultado:
-        #                 break
-
-        #     if resultado:
-        #         print("Elemento encontrado:", resultado)
-        #         inventarios_tiendas = self.inventario_service.get_store_inventories_total_stock_by_brand_name_and_month(nombre_marca, mes, anio)
-
-        #     else:
-        #         print("No se encontró el mes en el año especificado.")
-        #         # Si no se encuentra el mes en el año especificado, entonces se obtiene el inventario actual
-        #         inventarios_tiendas = self.inventario_service.get_store_inventories_total_stock_by_brand_name(nombre_marca)
-        #         # Crear una nueva lista con los valores numéricos reemplazados por 0 en las existencias
-        #         inventarios_tiendas = [(key, 0) for key, _ in inventarios_tiendas]
-
-        # else:
-        #     raise ValueError("El tipo de inventario no es válido")
-
-        # # Convertimos el resultado en diccionario y luego en dataframe
-        # inventarios_tiendas_dict = self.inventario_service.transform_store_inventories_total_stock(inventarios_tiendas)
-        # inventarios_tiendas_df = pd.DataFrame(inventarios_tiendas_dict)
-
-
-        #* Cargamos las categorias, subcategorias, etc dependiendo la marca
-        # Evaluamos las marcas, puesto que algunas se agrupan de manera diferente
-        # if nombre_marca == 'AY GÜEY':
-        #     # pueba sql
-        #     # datos = self.venta_service.get_detail_store_report_by_brand_using_sql(nombre_marca,whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
-        #     #                                     fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior,'categoria')
-        #     datos = self.venta_service.get_hierarchical_sales_report(nombre_marca,whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
-        #                                         fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior, tallas=tallas, generos=generos, disenios=disenios, colecciones=colecciones)
-        # if nombre_marca == 'MUMUSO':
-        #     datos = self.venta_service.get_hierarchical_sales_report(nombre_marca,whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
-        #                                         fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior)
-            
+        #* Cargamos las categorias, subcategorias, etc dependiendo la marca      
         datos = self.venta_service.get_hierarchical_sales_report(nombre_marca,whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
                                                 fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior, tallas=tallas, generos=generos, disenios=disenios, colecciones=colecciones)
                             
