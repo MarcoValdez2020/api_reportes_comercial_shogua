@@ -277,7 +277,7 @@ class VentaRepository:
                 )
             SELECT *
             FROM TotalesPorNivel
-            WHERE (cantidad_anio_actual > 0 OR cantidad_anio_anterior > 0)
+            WHERE cantidad_anio_actual > 0
             ORDER BY nivel, key;
             """
         elif nombre_marca == 'MUMUSO':
@@ -372,7 +372,7 @@ class VentaRepository:
                 )
             SELECT *
             FROM TotalesPorNivel
-            WHERE (cantidad_anio_actual > 0 OR cantidad_anio_anterior > 0)
+            WHERE cantidad_anio_actual > 0
             ORDER BY nivel, key;
             """
         else:
@@ -450,7 +450,7 @@ class VentaRepository:
                 )
             SELECT *
             FROM TotalesPorNivel
-            WHERE (cantidad_anio_actual > 0 OR cantidad_anio_anterior > 0)
+            WHERE cantidad_anio_actual > 0
             ORDER BY nivel, key;
             """
         # Parámetros seguros para la consulta
