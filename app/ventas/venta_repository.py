@@ -1,6 +1,7 @@
 import pandas as pd
 from sqlmodel import Session,select, and_
-from datetime import date
+from datetime import date, datetime
+from dateutil.relativedelta import relativedelta
 from sqlalchemy import func, literal, select, func, cast, DECIMAL, distinct, or_, case
 from sqlalchemy.sql import text
 from sqlalchemy.exc import SQLAlchemyError
@@ -184,6 +185,29 @@ class VentaRepository:
         considerando las ventas del año anterior y el año actual, filtrando por tallas, géneros,
         diseños y colecciones, utilizando parámetros para prevenir SQL Injection.
         """
+
+        # Verificar el tipo de inventario
+        if tipo_inventario == 'actual':
+            # Se hará el join con la tabla de inventario_tienda
+            tabla_inventario = 'inventario_tienda'
+            filtro_fecha = ''
+
+        elif tipo_inventario == 'cierre-mes':
+            # Se hará el join con la tabla histiorial_inventario_tienda
+            tabla_inventario = 'historial_inventario_tienda'
+            
+            # Se calcula la fecha de cierre de mes segun el mes actual
+            # Convertir la cadena a un objeto datetime
+            fecha = datetime.strptime(fecha_inicio_mes_anio_actual, "%Y-%m-%d")
+
+            # Sumar un mes (automáticamente maneja diciembre y cambia de año si es necesario)
+            fecha_mas_un_mes = fecha + relativedelta(months=1)
+
+            # Convertir de nuevo a cadena
+            fecha_cierre_mes = fecha_mas_un_mes.strftime("%Y-%m-%d")
+            
+            filtro_fecha = f"AND {tabla_inventario}.fecha = '{fecha_cierre_mes}'"
+
         # Generar las condiciones dinámicas
         condiciones = [
             "tienda.whscode = ANY (:whscodes)",
@@ -238,13 +262,14 @@ class VentaRepository:
                     SELECT
                         producto.departamento,
                         producto.categoria,
-                        SUM(inventario_tienda.existencia) AS existencia
-                    FROM inventario_tienda
-                    JOIN producto ON inventario_tienda.id_producto = producto.id_producto
-                    JOIN tienda ON tienda.whscode = inventario_tienda.whscode
+                        producto.subcategoria,
+                        SUM(COALESCE({tabla_inventario}.existencia, 0)) AS existencia
+                    FROM {tabla_inventario}
+                    JOIN producto ON {tabla_inventario}.id_producto = producto.id_producto
+                    JOIN tienda ON tienda.whscode = {tabla_inventario}.whscode
                     JOIN marca ON tienda.id_marca = marca.id_marca
-                    WHERE {where_clause}
-                    GROUP BY producto.departamento, producto.categoria
+                    WHERE {where_clause} {filtro_fecha}
+                    GROUP BY producto.departamento, producto.categoria, producto.subcategoria
                 ),
                 Variaciones AS (
                     SELECT 
@@ -544,6 +569,7 @@ class VentaRepository:
 
         # Convertir la consulta a un objeto SQL seguro
         query = text(query)
+        
 
         # Ejecutar la consulta en la base de datos
         result = self.session.execute(query, params).fetchall()
