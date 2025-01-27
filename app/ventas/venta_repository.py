@@ -173,6 +173,7 @@ class VentaRepository:
         fecha_fin_mes_anio_actual: str,
         fecha_inicio_mes_anio_anterior: str,
         fecha_fin_mes_anio_anterior: str,
+        tipo_inventario: str,
         tallas: list[str] = None,
         generos: list[str] = None,
         disenios: list[str] = None,

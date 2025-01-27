@@ -1665,9 +1665,10 @@ class ReportService:
         fecha_fin_mes_anio_anterior =f'{anio_anterior}-{mes_numero:02}-{ultimo_dia_mes_anio_anterior}'
 
 
+
         #* Cargamos las categorias, subcategorias, etc dependiendo la marca      
         datos = self.venta_service.get_hierarchical_sales_report(nombre_marca,whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
-                                                fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior, tallas=tallas, generos=generos, disenios=disenios, colecciones=colecciones)
+                                                fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior, tipo_inventario,tallas=tallas, generos=generos, disenios=disenios, colecciones=colecciones)
 
         
         if len(datos) == 0:

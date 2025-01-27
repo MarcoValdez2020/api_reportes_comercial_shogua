@@ -153,7 +153,7 @@ class VentaService:
     #? Funciones para trabajar con datos
 
     def get_hierarchical_sales_report(self, nombre_marca: str, whscodes: list[str], fecha_inicio_mes_anio_actual: str, fecha_fin_mes_anio_actual: str, 
-                                fecha_inicio_mes_anio_anterior: str, fecha_fin_mes_anio_anterior: str, tallas: list[str] = None,
+                                fecha_inicio_mes_anio_anterior: str, fecha_fin_mes_anio_anterior: str,tipo_inventario:str, tallas: list[str] = None,
                                 generos: list[str] = None, disenios: list[str] = None, colecciones: list[str] = None):
         """Funcion para traer el reporte de detalle venta"""
         with UnitOfWork() as uow:
@@ -162,7 +162,7 @@ class VentaService:
                 # Hacemos la peticion al repositorio
                 data =  uow.venta_repository.get_hierarchical_sales_report(
                     nombre_marca, whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
-                    fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior, tallas=tallas, generos=generos, disenios=disenios, colecciones=colecciones
+                    fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior, tipo_inventario, tallas=tallas, generos=generos, disenios=disenios, colecciones=colecciones
                 )
 
 
@@ -177,6 +177,9 @@ class VentaService:
                     # Primero, creamos los departamentos
                     for row in data:
                         nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_mes_porcentaje_cantidad, variacion_mes_cantidad, variacion_porcentaje, variacion_efectivo, existencia = row
+
+                        # Asignar 0 a existencia si es None o NULL
+                        existencia = existencia if existencia is not None else 0
 
                         if nivel == "DEPARTAMENTO":
                             # Si el departamento no existe en el mapa, lo creamos
@@ -206,6 +209,9 @@ class VentaService:
                     for row in data:
                         nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_mes_porcentaje_cantidad, variacion_mes_cantidad, variacion_porcentaje, variacion_efectivo, existencia = row
 
+                        # Asignar 0 a existencia si es None o NULL
+                        existencia = existencia if existencia is not None else 0
+                    
                         # Creando el diccionario para cada nivel
                         item = {
                             "nivel": nivel,
@@ -255,6 +261,10 @@ class VentaService:
                     # Primero, creamos las categorias
                     for row in data:
                         nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_mes_porcentaje_cantidad, variacion_mes_cantidad, variacion_porcentaje, variacion_efectivo, existencia = row
+                        
+                        # Asignar 0 a existencia si es None o NULL
+                        existencia = existencia if existencia is not None else 0
+                        
                         if nivel == "CATEGORIA":
                             # Si el departamento no existe en el mapa, lo creamos
                             if key not in categorias:
@@ -282,7 +292,10 @@ class VentaService:
                     subcategorias = {}
                     for row in data:
                         nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_mes_porcentaje_cantidad, variacion_mes_cantidad, variacion_porcentaje, variacion_efectivo, existencia = row
-
+                        
+                        # Asignar 0 a existencia si es None o NULL
+                        existencia = existencia if existencia is not None else 0
+                        
                         # Creando el diccionario para cada nivel
                         item = {
                             "nivel": nivel,
