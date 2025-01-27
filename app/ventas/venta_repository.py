@@ -241,6 +241,8 @@ class VentaRepository:
                         iva_anio_anterior,
                         cantidad_anio_actual,
                         iva_anio_actual,
+                        COALESCE((cantidad_anio_actual / NULLIF(cantidad_anio_anterior, 0)) - 1, 0) * 100 AS variacion_mes_porcentaje_cantidad,
+                        COALESCE(cantidad_anio_actual - cantidad_anio_anterior, 0) AS variacion_mes_cantidad,
                         COALESCE((iva_anio_actual / NULLIF(iva_anio_anterior, 0)) - 1, 0) * 100 AS variacion_porcentaje,
                         COALESCE(iva_anio_actual - iva_anio_anterior, 0) AS variacion_efectivo
                     FROM VentasPorProducto
@@ -254,6 +256,8 @@ class VentaRepository:
                         SUM(iva_anio_anterior) AS iva_anio_anterior,
                         SUM(cantidad_anio_actual) AS cantidad_anio_actual,
                         SUM(iva_anio_actual) AS iva_anio_actual,
+                        COALESCE((SUM(cantidad_anio_actual) / NULLIF(SUM(cantidad_anio_anterior), 0)) - 1, 0) * 100 AS variacion_mes_porcentaje_cantidad,
+                        COALESCE(SUM(cantidad_anio_actual) - SUM(cantidad_anio_anterior), 0) AS variacion_mes_cantidad,
                         COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100 AS variacion_porcentaje,
                         COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0) AS variacion_efectivo
                     FROM Variaciones
@@ -269,17 +273,20 @@ class VentaRepository:
                         SUM(iva_anio_anterior),
                         SUM(cantidad_anio_actual),
                         SUM(iva_anio_actual),
+                        COALESCE((SUM(cantidad_anio_actual) / NULLIF(SUM(cantidad_anio_anterior), 0)) - 1, 0) * 100,
+                        COALESCE(SUM(cantidad_anio_actual) - SUM(cantidad_anio_anterior), 0),
                         COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100,
                         COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0)
                     FROM Variaciones
                     GROUP BY departamento, categoria
-
                 )
             SELECT *
             FROM TotalesPorNivel
             WHERE cantidad_anio_actual > 0
             ORDER BY nivel, key;
             """
+
+
         elif nombre_marca == 'MUMUSO':
             # Si la marca es mumuso trabajara con los 3 niveles
 
@@ -323,6 +330,8 @@ class VentaRepository:
                         iva_anio_anterior,
                         cantidad_anio_actual,
                         iva_anio_actual,
+                        COALESCE((cantidad_anio_actual / NULLIF(cantidad_anio_anterior, 0)) - 1, 0) * 100 AS variacion_mes_porcentaje_cantidad,
+                        COALESCE(cantidad_anio_actual - cantidad_anio_anterior, 0) AS variacion_mes_cantidad,
                         COALESCE((iva_anio_actual / NULLIF(iva_anio_anterior, 0)) - 1, 0) * 100 AS variacion_porcentaje,
                         COALESCE(iva_anio_actual - iva_anio_anterior, 0) AS variacion_efectivo
                     FROM VentasPorProducto
@@ -336,6 +345,8 @@ class VentaRepository:
                         SUM(iva_anio_anterior) AS iva_anio_anterior,
                         SUM(cantidad_anio_actual) AS cantidad_anio_actual,
                         SUM(iva_anio_actual) AS iva_anio_actual,
+                        COALESCE((SUM(cantidad_anio_actual) / NULLIF(SUM(cantidad_anio_anterior), 0)) - 1, 0) * 100 AS variacion_mes_porcentaje_cantidad,
+                        COALESCE(SUM(cantidad_anio_actual) - SUM(cantidad_anio_anterior), 0) AS variacion_mes_cantidad,
                         COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100 AS variacion_porcentaje,
                         COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0) AS variacion_efectivo
                     FROM Variaciones
@@ -351,6 +362,8 @@ class VentaRepository:
                         SUM(iva_anio_anterior),
                         SUM(cantidad_anio_actual),
                         SUM(iva_anio_actual),
+                        COALESCE((SUM(cantidad_anio_actual) / NULLIF(SUM(cantidad_anio_anterior), 0)) - 1, 0) * 100,
+                        COALESCE(SUM(cantidad_anio_actual) - SUM(cantidad_anio_anterior), 0),
                         COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100,
                         COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0)
                     FROM Variaciones
@@ -366,6 +379,8 @@ class VentaRepository:
                         iva_anio_anterior,
                         cantidad_anio_actual,
                         iva_anio_actual,
+                        variacion_mes_porcentaje_cantidad,
+                        variacion_mes_cantidad,
                         variacion_porcentaje,
                         variacion_efectivo
                     FROM Variaciones
@@ -375,6 +390,8 @@ class VentaRepository:
             WHERE cantidad_anio_actual > 0
             ORDER BY nivel, key;
             """
+        
+        
         else:
             # Si no es AG ni mumuso entonces se trabaja a nivel categoria y subcategoria
             query = f"""
