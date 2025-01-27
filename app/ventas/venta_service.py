@@ -254,7 +254,7 @@ class VentaService:
 
                     # Primero, creamos las categorias
                     for row in data:
-                        nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_mes_porcentaje_cantidad, variacion_mes_cantidad, variacion_porcentaje, variacion_efectivo = row
+                        nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_mes_porcentaje_cantidad, variacion_mes_cantidad, variacion_porcentaje, variacion_efectivo, existencia = row
                         if nivel == "CATEGORIA":
                             # Si el departamento no existe en el mapa, lo creamos
                             if key not in categorias:
@@ -271,6 +271,7 @@ class VentaService:
                                         "variacion_mes_cantidad": variacion_mes_cantidad,
                                         "variacion_mes_porcentaje": variacion_porcentaje,
                                         "variacion_mes_efectivo": variacion_efectivo,
+                                        "existencia": existencia
                                     },
                                     "children": []
                                 }
@@ -280,7 +281,7 @@ class VentaService:
 
                     subcategorias = {}
                     for row in data:
-                        nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_mes_porcentaje_cantidad, variacion_mes_cantidad, variacion_porcentaje, variacion_efectivo = row
+                        nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_mes_porcentaje_cantidad, variacion_mes_cantidad, variacion_porcentaje, variacion_efectivo, existencia = row
 
                         # Creando el diccionario para cada nivel
                         item = {
@@ -296,6 +297,7 @@ class VentaService:
                                 "variacion_mes_cantidad": variacion_mes_cantidad,
                                 "variacion_mes_porcentaje": variacion_porcentaje,
                                 "variacion_mes_efectivo": variacion_efectivo,
+                                "existencia": existencia
                             },
                             "children": []
                         }
