@@ -321,6 +321,19 @@ class VentaRepository:
                     WHERE {where_clause}
                     GROUP BY producto.departamento, producto.categoria, producto.subcategoria
                 ),
+                InventarioPorProducto AS (
+                    SELECT
+                        producto.departamento,
+                        producto.categoria,
+                        producto.subcategoria,
+                        SUM(inventario_tienda.existencia) AS existencia
+                    FROM inventario_tienda
+                    JOIN producto ON inventario_tienda.id_producto = producto.id_producto
+                    JOIN tienda ON tienda.whscode = inventario_tienda.whscode
+                    JOIN marca ON tienda.id_marca = marca.id_marca
+                    WHERE {where_clause}
+                    GROUP BY producto.departamento, producto.categoria, producto.subcategoria
+                ),
                 Variaciones AS (
                     SELECT 
                         departamento,
@@ -348,8 +361,10 @@ class VentaRepository:
                         COALESCE((SUM(cantidad_anio_actual) / NULLIF(SUM(cantidad_anio_anterior), 0)) - 1, 0) * 100 AS variacion_mes_porcentaje_cantidad,
                         COALESCE(SUM(cantidad_anio_actual) - SUM(cantidad_anio_anterior), 0) AS variacion_mes_cantidad,
                         COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100 AS variacion_porcentaje,
-                        COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0) AS variacion_efectivo
+                        COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0) AS variacion_efectivo,
+                        SUM(existencia) AS existencia
                     FROM Variaciones
+                    LEFT JOIN InventarioPorProducto USING (departamento)
                     GROUP BY departamento
 
                     UNION ALL
@@ -365,8 +380,10 @@ class VentaRepository:
                         COALESCE((SUM(cantidad_anio_actual) / NULLIF(SUM(cantidad_anio_anterior), 0)) - 1, 0) * 100,
                         COALESCE(SUM(cantidad_anio_actual) - SUM(cantidad_anio_anterior), 0),
                         COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100,
-                        COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0)
+                        COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0),
+                        SUM(existencia)
                     FROM Variaciones
+                    LEFT JOIN InventarioPorProducto USING (departamento, categoria)
                     GROUP BY departamento, categoria
 
                     UNION ALL
@@ -382,12 +399,14 @@ class VentaRepository:
                         variacion_mes_porcentaje_cantidad,
                         variacion_mes_cantidad,
                         variacion_porcentaje,
-                        variacion_efectivo
+                        variacion_efectivo,
+                        existencia
                     FROM Variaciones
+                    LEFT JOIN InventarioPorProducto USING (departamento, categoria, subcategoria)
                 )
             SELECT *
             FROM TotalesPorNivel
-            WHERE cantidad_anio_actual > 0
+            WHERE NOT (cantidad_anio_actual <= 0 AND existencia <= 0)
             ORDER BY nivel, key;
             """
         
