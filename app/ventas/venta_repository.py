@@ -384,12 +384,12 @@ class VentaRepository:
                         'DEPARTAMENTO' AS nivel,
                         departamento as key,
                         sum(existencia) as existencia_tienda
-                    FROM inventario_tienda
-                    JOIN producto on producto.id_producto = inventario_tienda.id_producto
-                    JOIN tienda ON tienda.whscode = inventario_tienda.whscode
+                    FROM {tabla_inventario}
+                    JOIN producto on producto.id_producto = {tabla_inventario}.id_producto
+                    JOIN tienda ON tienda.whscode = {tabla_inventario}.whscode
                     JOIN marca ON marca.id_marca = tienda.id_marca
                     CROSS JOIN variables
-                    WHERE  {where_clause} 
+                    WHERE  {where_clause} {filtro_fecha}
                     GROUP BY producto.departamento
 
                     UNION ALL
@@ -398,12 +398,12 @@ class VentaRepository:
                         'CATEGORIA' AS nivel,
                         departamento || '-' || COALESCE(categoria, 'SIN CATEGORIA') AS key,
                         sum(existencia) as existencia_tienda
-                    FROM inventario_tienda
-                    JOIN producto ON producto.id_producto = inventario_tienda.id_producto
-                    JOIN tienda ON tienda.whscode = inventario_tienda.whscode
+                    FROM {tabla_inventario}
+                    JOIN producto ON producto.id_producto = {tabla_inventario}.id_producto
+                    JOIN tienda ON tienda.whscode = {tabla_inventario}.whscode
                     JOIN marca ON marca.id_marca = tienda.id_marca
                     CROSS JOIN variables
-                    WHERE {where_clause} 
+                    WHERE {where_clause} {filtro_fecha}
                     GROUP BY producto.departamento, producto.categoria
                     
                     UNION ALL
@@ -412,12 +412,12 @@ class VentaRepository:
                         'SUBCATEGORIA' AS nivel,
                         departamento || '-' || COALESCE(categoria, 'SIN CATEGORIA') || '-' || COALESCE(subcategoria, 'SIN SUBCATEGORIA') AS key,
                         sum(existencia) as existencia_tienda
-                    FROM inventario_tienda
-                    JOIN producto ON producto.id_producto = inventario_tienda.id_producto
-                    JOIN tienda ON tienda.whscode = inventario_tienda.whscode
+                    FROM {tabla_inventario}
+                    JOIN producto ON producto.id_producto = {tabla_inventario}.id_producto
+                    JOIN tienda ON tienda.whscode = {tabla_inventario}.whscode
                     JOIN marca ON marca.id_marca = tienda.id_marca
                     CROSS JOIN variables
-                    WHERE {where_clause} 
+                    WHERE {where_clause} {filtro_fecha}
                     GROUP BY producto.departamento, producto.categoria, producto.subcategoria
                 ),
                 TotalesPorNivel AS (
@@ -459,16 +459,15 @@ class VentaRepository:
                         'SUBCATEGORIA' AS nivel,
                         departamento || '-' || COALESCE(categoria, 'SIN CATEGORIA') || '-' || COALESCE(subcategoria, 'SIN SUBCATEGORIA') AS key,
                         COALESCE(subcategoria, 'SIN CATEGORIA') AS nombre,
-                        SUM(iva_anio_anterior),
-                        SUM(iva_anio_actual),
-                        COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0),
-                        COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100,
-                        SUM(cantidad_anio_anterior),
-                        SUM(cantidad_anio_actual),
-                        COALESCE(SUM(cantidad_anio_actual) - SUM(cantidad_anio_anterior), 0),
-                        COALESCE((SUM(cantidad_anio_actual) / NULLIF(SUM(cantidad_anio_anterior), 0)) - 1, 0) * 100
+                        iva_anio_anterior,
+                        iva_anio_actual,
+                        variacion_efectivo,
+                        variacion_porcentaje,
+                        cantidad_anio_anterior,
+                        cantidad_anio_actual,
+                        variacion_mes_cantidad,
+                        variacion_mes_porcentaje_cantidad   
                     FROM VariacionesVentas
-                    GROUP BY departamento, categoria, subcategoria
                 )
 
                 SELECT 
