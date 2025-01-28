@@ -1,5 +1,6 @@
 import pandas as pd
 import calendar
+from datetime import timedelta, date
 from typing import List, Tuple
 from datetime import datetime, date
 from fastapi import  HTTPException
@@ -159,10 +160,15 @@ class VentaService:
         with UnitOfWork() as uow:
             # Intenta la operacion en la bd
             try:
+                # Obtener las fechas de inicio y fin del periodo de ventas para calcular el promedio de ventas por niveles
+                fecha_inicio_periodo_ventas_prom, fecha_fin_periodo_ventas_prom = self.obtener_fecha_fin_y_fecha_inicio_para_promedio_ventas_por_niveles(fecha_fin_mes_anio_actual)
+
                 # Hacemos la peticion al repositorio
                 data =  uow.venta_repository.get_hierarchical_sales_report(
                     nombre_marca, whscodes, fecha_inicio_mes_anio_actual, fecha_fin_mes_anio_actual, 
-                    fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior, tipo_inventario, tallas=tallas, generos=generos, disenios=disenios, colecciones=colecciones
+                    fecha_inicio_mes_anio_anterior, fecha_fin_mes_anio_anterior, tipo_inventario, 
+                    fecha_inicio_periodo_ventas_prom, fecha_fin_periodo_ventas_prom,
+                    tallas=tallas, generos=generos, disenios=disenios, colecciones=colecciones
                 )
 
 
@@ -367,3 +373,44 @@ class VentaService:
             except Exception as e:
                 # Log de la excepción para saber el error
                 print(f"Error al obtener registros: {e}")
+
+
+    #? Funciones para trabajar con fechas
+    def obtener_domingo_anterior(self, fecha:date):
+        """Función para obtener la fecha en yyyy-mm-dd del domingo anterior a la fecha recibida"""
+        # Convertir la fecha a datetime
+        fecha_dt = datetime.combine(fecha, datetime.min.time())
+        # Obtener el día de la semana
+        dia_semana = fecha_dt.weekday()
+        # Restar los días necesarios para llegar al domingo anterior
+        fecha_domingo_anterior = fecha_dt - timedelta(days=dia_semana + 1)
+    
+        return fecha_domingo_anterior.date()
+    
+
+    def obtener_fecha_fin_y_fecha_inicio_para_promedio_ventas_por_niveles(self,fecha_fin_mes_anio_actual:str):
+        """Funcion para obtener la fecha de inicio y fin del periodo para calcular el promedio de ventas por niveles"""
+
+        # Convertir la fecha de fin a date
+        fecha_fin = datetime.strptime(fecha_fin_mes_anio_actual, '%Y-%m-%d').date()
+
+        # Vemos que fecha es hoy (que es la que esta lanzando la peticion)
+        hoy =  date.today()
+
+        # Verificamos que la fecha_fin_mes_anio_actual ya haya pasado por medio de la comparacion de fechas
+        if fecha_fin > hoy:
+            # La fecha de fin aun no ha pasado, entonces retornamos la fecha del domingo anterior a la fecha de hoy
+            fecha_fin_periodo_ventas_prom = self.obtener_domingo_anterior(hoy)
+        else:
+            # La fecha de fin ya paso, entonces se puede usar como fecha de fin del periodo de ventas
+            fecha_fin_periodo_ventas_prom = fecha_fin
+        
+        # Calcular la fecha de inicio del periodo de ventas restando 365 dias a la fecha de fin preiodo ventas
+        fecha_inicio_periodo_ventas_prom = fecha_fin_periodo_ventas_prom - pd.DateOffset(days=365)
+        # print(f'periodo: {fecha_inicio_periodo_ventas} - {fecha_fin_periodo_ventas}')
+        return fecha_inicio_periodo_ventas_prom.strftime('%Y-%m-%d'), fecha_fin_periodo_ventas_prom.strftime('%Y-%m-%d')
+
+
+
+
+
