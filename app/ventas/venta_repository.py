@@ -348,65 +348,92 @@ class VentaRepository:
                         producto.categoria,
                         producto.subcategoria,
                         SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_anterior AND variables.fecha_fin_anio_anterior 
-                                THEN venta.cantidad ELSE 0 END) AS cantidad_anio_anterior,
+                            THEN venta.cantidad ELSE 0 END) AS cantidad_anio_anterior,
                         SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_anterior AND variables.fecha_fin_anio_anterior 
-                                THEN venta.venta_neta_con_iva ELSE 0 END) AS iva_anio_anterior,
+                            THEN venta.venta_neta_con_iva ELSE 0 END) AS iva_anio_anterior,
                         SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_actual AND variables.fecha_fin_anio_actual 
-                                THEN venta.cantidad ELSE 0 END) AS cantidad_anio_actual,
+                            THEN venta.cantidad ELSE 0 END) AS cantidad_anio_actual,
                         SUM(CASE WHEN venta.fecha BETWEEN variables.fecha_inicio_anio_actual AND variables.fecha_fin_anio_actual 
-                                THEN venta.venta_neta_con_iva ELSE 0 END) AS iva_anio_actual
+                            THEN venta.venta_neta_con_iva ELSE 0 END) AS iva_anio_actual
                     FROM venta
                     JOIN tienda ON tienda.whscode = venta.whscode
                     JOIN marca ON tienda.id_marca = marca.id_marca
                     JOIN producto ON venta.id_producto = producto.id_producto
                     CROSS JOIN variables
-                    WHERE {where_clause}
-                    GROUP BY producto.departamento, producto.categoria, producto.subcategoria
-                ),
-                InventarioPorProducto AS (
-                    SELECT
-                        producto.departamento,
-                        producto.categoria,
-                        producto.subcategoria,
-                        SUM(inventario_tienda.existencia) AS existencia
-                    FROM inventario_tienda
-                    JOIN producto ON inventario_tienda.id_producto = producto.id_producto
-                    JOIN tienda ON tienda.whscode = inventario_tienda.whscode
-                    JOIN marca ON tienda.id_marca = marca.id_marca
-                    WHERE {where_clause}
-                    GROUP BY producto.departamento, producto.categoria, producto.subcategoria
-                ),
-                Variaciones AS (
+                    WHERE  {where_clause}
+                    GROUP BY producto.departamento , producto.categoria, producto.subcategoria
+                    ORDER BY cantidad_anio_actual DESC
+                ), 
+                VariacionesVentas AS (
                     SELECT 
                         departamento,
                         categoria,
                         subcategoria,
-                        cantidad_anio_anterior,
                         iva_anio_anterior,
-                        cantidad_anio_actual,
                         iva_anio_actual,
-                        COALESCE((cantidad_anio_actual / NULLIF(cantidad_anio_anterior, 0)) - 1, 0) * 100 AS variacion_mes_porcentaje_cantidad,
-                        COALESCE(cantidad_anio_actual - cantidad_anio_anterior, 0) AS variacion_mes_cantidad,
+                        COALESCE(iva_anio_actual - iva_anio_anterior, 0) AS variacion_efectivo,
                         COALESCE((iva_anio_actual / NULLIF(iva_anio_anterior, 0)) - 1, 0) * 100 AS variacion_porcentaje,
-                        COALESCE(iva_anio_actual - iva_anio_anterior, 0) AS variacion_efectivo
+                        cantidad_anio_anterior,
+                        cantidad_anio_actual,
+                        COALESCE(cantidad_anio_actual - cantidad_anio_anterior, 0) AS variacion_mes_cantidad,
+                        ROUND(COALESCE((CAST(cantidad_anio_actual AS numeric) / NULLIF(CAST(cantidad_anio_anterior AS numeric), 0)) - 1, 0) * 100, 2) AS variacion_mes_porcentaje_cantidad
                     FROM VentasPorProducto
+                ),
+                InventarioTienda AS (
+                    SELECT 
+                        'DEPARTAMENTO' AS nivel,
+                        departamento as key,
+                        sum(existencia) as existencia_tienda
+                    FROM inventario_tienda
+                    JOIN producto on producto.id_producto = inventario_tienda.id_producto
+                    JOIN tienda ON tienda.whscode = inventario_tienda.whscode
+                    JOIN marca ON marca.id_marca = tienda.id_marca
+                    CROSS JOIN variables
+                    WHERE  {where_clause} 
+                    GROUP BY producto.departamento
+
+                    UNION ALL
+
+                    SELECT 
+                        'CATEGORIA' AS nivel,
+                        departamento || '-' || COALESCE(categoria, 'SIN CATEGORIA') AS key,
+                        sum(existencia) as existencia_tienda
+                    FROM inventario_tienda
+                    JOIN producto ON producto.id_producto = inventario_tienda.id_producto
+                    JOIN tienda ON tienda.whscode = inventario_tienda.whscode
+                    JOIN marca ON marca.id_marca = tienda.id_marca
+                    CROSS JOIN variables
+                    WHERE {where_clause} 
+                    GROUP BY producto.departamento, producto.categoria
+                    
+                    UNION ALL
+
+                    SELECT 
+                        'SUBCATEGORIA' AS nivel,
+                        departamento || '-' || COALESCE(categoria, 'SIN CATEGORIA') || '-' || COALESCE(subcategoria, 'SIN SUBCATEGORIA') AS key,
+                        sum(existencia) as existencia_tienda
+                    FROM inventario_tienda
+                    JOIN producto ON producto.id_producto = inventario_tienda.id_producto
+                    JOIN tienda ON tienda.whscode = inventario_tienda.whscode
+                    JOIN marca ON marca.id_marca = tienda.id_marca
+                    CROSS JOIN variables
+                    WHERE {where_clause} 
+                    GROUP BY producto.departamento, producto.categoria, producto.subcategoria
                 ),
                 TotalesPorNivel AS (
                     SELECT 
                         'DEPARTAMENTO' AS nivel,
                         departamento AS key,
                         departamento AS nombre,
-                        SUM(cantidad_anio_anterior) AS cantidad_anio_anterior,
                         SUM(iva_anio_anterior) AS iva_anio_anterior,
-                        SUM(cantidad_anio_actual) AS cantidad_anio_actual,
                         SUM(iva_anio_actual) AS iva_anio_actual,
-                        COALESCE((SUM(cantidad_anio_actual) / NULLIF(SUM(cantidad_anio_anterior), 0)) - 1, 0) * 100 AS variacion_mes_porcentaje_cantidad,
-                        COALESCE(SUM(cantidad_anio_actual) - SUM(cantidad_anio_anterior), 0) AS variacion_mes_cantidad,
-                        COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100 AS variacion_porcentaje,
                         COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0) AS variacion_efectivo,
-                        SUM(existencia) AS existencia
-                    FROM Variaciones
-                    LEFT JOIN InventarioPorProducto USING (departamento)
+                        COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100 AS variacion_porcentaje,
+                        SUM(cantidad_anio_anterior) AS cantidad_anio_anterior,
+                        SUM(cantidad_anio_actual) AS cantidad_anio_actual,
+                        COALESCE(SUM(cantidad_anio_actual) - SUM(cantidad_anio_anterior), 0) AS variacion_mes_cantidad,
+                        COALESCE((SUM(cantidad_anio_actual) / NULLIF(SUM(cantidad_anio_anterior), 0)) - 1, 0) * 100 AS variacion_mes_porcentaje_cantidad
+                    FROM VariacionesVentas
                     GROUP BY departamento
 
                     UNION ALL
@@ -415,17 +442,15 @@ class VentaRepository:
                         'CATEGORIA' AS nivel,
                         departamento || '-' || COALESCE(categoria, 'SIN CATEGORIA') AS key,
                         COALESCE(categoria, 'SIN CATEGORIA') AS nombre,
-                        SUM(cantidad_anio_anterior),
                         SUM(iva_anio_anterior),
-                        SUM(cantidad_anio_actual),
                         SUM(iva_anio_actual),
-                        COALESCE((SUM(cantidad_anio_actual) / NULLIF(SUM(cantidad_anio_anterior), 0)) - 1, 0) * 100,
-                        COALESCE(SUM(cantidad_anio_actual) - SUM(cantidad_anio_anterior), 0),
-                        COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100,
                         COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0),
-                        SUM(existencia)
-                    FROM Variaciones
-                    LEFT JOIN InventarioPorProducto USING (departamento, categoria)
+                        COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100,
+                        SUM(cantidad_anio_anterior),
+                        SUM(cantidad_anio_actual),
+                        COALESCE(SUM(cantidad_anio_actual) - SUM(cantidad_anio_anterior), 0),
+                        COALESCE((SUM(cantidad_anio_actual) / NULLIF(SUM(cantidad_anio_anterior), 0)) - 1, 0) * 100
+                    FROM VariacionesVentas
                     GROUP BY departamento, categoria
 
                     UNION ALL
@@ -433,23 +458,37 @@ class VentaRepository:
                     SELECT 
                         'SUBCATEGORIA' AS nivel,
                         departamento || '-' || COALESCE(categoria, 'SIN CATEGORIA') || '-' || COALESCE(subcategoria, 'SIN SUBCATEGORIA') AS key,
-                        COALESCE(subcategoria, 'SIN SUBCATEGORIA') AS nombre,
-                        cantidad_anio_anterior,
-                        iva_anio_anterior,
-                        cantidad_anio_actual,
-                        iva_anio_actual,
-                        variacion_mes_porcentaje_cantidad,
-                        variacion_mes_cantidad,
-                        variacion_porcentaje,
-                        variacion_efectivo,
-                        existencia
-                    FROM Variaciones
-                    LEFT JOIN InventarioPorProducto USING (departamento, categoria, subcategoria)
+                        COALESCE(subcategoria, 'SIN CATEGORIA') AS nombre,
+                        SUM(iva_anio_anterior),
+                        SUM(iva_anio_actual),
+                        COALESCE(SUM(iva_anio_actual) - SUM(iva_anio_anterior), 0),
+                        COALESCE((SUM(iva_anio_actual) / NULLIF(SUM(iva_anio_anterior), 0)) - 1, 0) * 100,
+                        SUM(cantidad_anio_anterior),
+                        SUM(cantidad_anio_actual),
+                        COALESCE(SUM(cantidad_anio_actual) - SUM(cantidad_anio_anterior), 0),
+                        COALESCE((SUM(cantidad_anio_actual) / NULLIF(SUM(cantidad_anio_anterior), 0)) - 1, 0) * 100
+                    FROM VariacionesVentas
+                    GROUP BY departamento, categoria, subcategoria
                 )
-            SELECT *
-            FROM TotalesPorNivel
-            WHERE NOT (cantidad_anio_actual <= 0 AND existencia <= 0)
-            ORDER BY nivel, key;
+
+                SELECT 
+                    COALESCE(t.nivel, i.nivel) AS nivel,
+                    COALESCE(t.key, i.key) AS key,
+                    COALESCE(t.nombre, 'SIN NOMBRE') AS nombre,
+                    COALESCE(t.iva_anio_anterior, 0) AS iva_anio_anterior,
+                    COALESCE(t.iva_anio_actual, 0) AS iva_anio_actual,
+                    COALESCE(t.variacion_efectivo, 0) AS variacion_efectivo,
+                    COALESCE(t.variacion_porcentaje, 0) AS variacion_porcentaje,
+                    COALESCE(t.cantidad_anio_anterior, 0) AS cantidad_anio_anterior,
+                    COALESCE(t.cantidad_anio_actual, 0) AS cantidad_anio_actual,
+                    COALESCE(t.variacion_mes_cantidad, 0) AS variacion_mes_cantidad,
+                    COALESCE(t.variacion_mes_porcentaje_cantidad, 0) AS variacion_mes_porcentaje_cantidad,
+                    COALESCE(i.existencia_tienda, 0) AS existencia_tienda
+                FROM TotalesPorNivel t
+                FULL OUTER JOIN InventarioTienda i
+                ON t.nivel = i.nivel AND t.key = i.key
+                WHERE
+                    NOT (cantidad_anio_actual <= 0 AND existencia_tienda <= 0);
             """
         
         
@@ -557,10 +596,6 @@ class VentaRepository:
         params = {
             "nombre_marca": nombre_marca,
             "whscodes": whscodes,
-            "fecha_inicio_mes_anio_actual": fecha_inicio_mes_anio_actual,
-            "fecha_fin_mes_anio_actual": fecha_fin_mes_anio_actual,
-            "fecha_inicio_mes_anio_anterior": fecha_inicio_mes_anio_anterior,
-            "fecha_fin_mes_anio_anterior": fecha_fin_mes_anio_anterior,
             "tallas": tallas,
             "generos": generos,
             "disenios": disenios,
