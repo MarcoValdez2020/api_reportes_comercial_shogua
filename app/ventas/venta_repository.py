@@ -627,7 +627,8 @@ class VentaRepository:
                 CROSS JOIN VentasTotalesPorTienda vt
                 CROSS JOIN InventariosTotalesPorTienda invtot
                 CROSS JOIN SumaPresupuestosTiendas spt
-                WHERE NOT (cantidad_anio_actual<= 0 AND i.existencia_tienda<= 0);
+                WHERE NOT (cantidad_anio_actual<= 0 AND i.existencia_tienda<= 0)
+                ORDER BY iva_anio_actual DESC;
             """
         
         
