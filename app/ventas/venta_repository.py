@@ -240,7 +240,7 @@ class VentaRepository:
         if nombre_marca == 'AY GÜEY':
             # Si la marca es AG el query solo trabajara con el nivel departamento -> categoria
             query = f"""
-                        WITH 
+            WITH 
                 variables AS (
                     SELECT
                         '{fecha_inicio_mes_anio_anterior}'::date AS fecha_inicio_anio_anterior,
