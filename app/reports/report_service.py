@@ -1677,12 +1677,21 @@ class ReportService:
                 "key": "SIN RESULTADOS",
                 "data": {
                     "nombre": "SIN RESULTADOS",
-                    "venta_mensual_anio_anterior_cantidad": 0,
-                    "venta_mensual_anio_anterior_iva": 0,
-                    "venta_mensual_anio_actual_cantidad": 0,
-                    "venta_mensual_anio_actual_iva": 0,
+                    "venta_neta_con_iva_anio_anterior": 0,
+                    "venta_neta_con_iva_anio_actual": 0,
+                    "variacion_mes_efectivo": 0,
                     "variacion_mes_porcentaje": 0,
-                    "variacion_mes_efectivo": 0
+                    "venta_cantidad_anio_anterior": 0,
+                    "venta_cantidad_anio_actual": 0,
+                    "variacion_mes_cantidad": 0,
+                    "variacion_mes_porcentaje_cantidad": 0,
+                    "porcentaje_participacion_venta_pzs": 0,
+                    "porcentaje_participacion_inv_pzs": 0,
+                    "presupuesto": 0,
+                    "existencia_tienda_cierre_aant": 0,
+                    "existencia_tienda": 0,
+                    "variacion_prc_inv": 0,
+                    "mos_tienda": 0
                 },
                 "children": []
             }]
