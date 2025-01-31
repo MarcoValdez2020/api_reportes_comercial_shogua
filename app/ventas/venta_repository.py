@@ -1155,11 +1155,14 @@ class VentaRepository:
                 COALESCE(i.existencia_tienda, 0) AS existencia_tienda,
                 ROUND(COALESCE((CAST(i.existencia_tienda AS numeric) / NULLIF(CAST(h.existencia_tienda_cm_aant AS numeric), 0)) - 1, 0), 2) AS variacion_prc_inv,
                 --Calculo del mos de tienda
-                ROUND(
-                    (COALESCE(i.existencia_tienda, 0) + COALESCE(pafpt.existencia, 0)) 
-                    / NULLIF(COALESCE(pv.venta_promedio, 1), 0),
-                    2
-                ) AS mos_tienda,
+                CASE 
+                    WHEN COALESCE(pv.venta_promedio, 1) = 0 OR pv.venta_promedio IS NULL THEN NULL  -- Devolver NULL cuando venta_promedio es 0 o NULL
+                    ELSE ROUND(
+                        (COALESCE(i.existencia_tienda, 0) + COALESCE(pafpt.existencia, 0)) 
+                        / NULLIF(COALESCE(pv.venta_promedio, 1), 0),
+                        2
+                    )
+                END AS mos_tienda,
                 -- Agregegación de existencias bodega y almacen virtual
                 COALESCE(pafpt.existencia, 0) AS existencia_bodega,
                 COALESCE(iavpn.existencia_almacen_virtual, 0) AS existencia_almacen_virtual
