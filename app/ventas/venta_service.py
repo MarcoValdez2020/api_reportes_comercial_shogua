@@ -279,10 +279,10 @@ class VentaService:
 
                     # Primero, creamos las categorias
                     for row in data:
-                        nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_mes_porcentaje_cantidad, variacion_mes_cantidad, variacion_porcentaje, variacion_efectivo, existencia = row
+                        nivel, key, nombre, venta_neta_con_iva_anio_anterior, venta_neta_con_iva_anio_actual, variacion_mes_efectivo, variacion_mes_porcentaje, venta_cantidad_anio_anterior, venta_cantidad_anio_actual, variacion_mes_cantidad, variacion_mes_porcentaje_cantidad, porcentaje_participacion_venta_pzs, porcentaje_participacion_inv_pzs, presupuesto, existencia_tienda_cierre_aant, existencia_tienda, variacion_prc_inv, mos_tienda, existencia_bodega, existencia_almacen_virtual = row
                         
                         # Asignar 0 a existencia si es None o NULL
-                        existencia = existencia if existencia is not None else 0
+                        existencia_tienda = existencia_tienda if existencia_tienda is not None else 0
                         
                         if nivel == "CATEGORIA":
                             # Si el departamento no existe en el mapa, lo creamos
@@ -292,15 +292,23 @@ class VentaService:
                                     "key": key,
                                     "data": {
                                         "nombre": nombre,
-                                        "venta_mensual_anio_anterior_cantidad": cantidad_anio_anterior,
-                                        "venta_mensual_anio_anterior_iva": iva_anio_anterior,
-                                        "venta_mensual_anio_actual_cantidad":cantidad_anio_actual,
-                                        "venta_mensual_anio_actual_iva": iva_anio_actual,
-                                        "variacion_mes_porcentaje_cantidad": variacion_mes_porcentaje_cantidad,
+                                        "venta_neta_con_iva_anio_anterior": venta_neta_con_iva_anio_anterior,
+                                        "venta_neta_con_iva_anio_actual": venta_neta_con_iva_anio_actual,
+                                        "variacion_mes_efectivo": variacion_mes_efectivo,
+                                        "variacion_mes_porcentaje": variacion_mes_porcentaje,
+                                        "venta_cantidad_anio_anterior": venta_cantidad_anio_anterior,
+                                        "venta_cantidad_anio_actual": venta_cantidad_anio_actual,
                                         "variacion_mes_cantidad": variacion_mes_cantidad,
-                                        "variacion_mes_porcentaje": variacion_porcentaje,
-                                        "variacion_mes_efectivo": variacion_efectivo,
-                                        "existencia": existencia
+                                        "variacion_mes_porcentaje_cantidad": variacion_mes_porcentaje_cantidad,
+                                        "porcentaje_participacion_venta_pzs": porcentaje_participacion_venta_pzs,
+                                        "porcentaje_participacion_inv_pzs": porcentaje_participacion_inv_pzs,
+                                        "presupuesto": presupuesto,
+                                        "existencia_tienda_cierre_aant": existencia_tienda_cierre_aant,
+                                        "existencia_tienda": existencia_tienda,
+                                        "variacion_prc_inv": variacion_prc_inv,
+                                        "mos_tienda": mos_tienda,
+                                        "existencia_bodega": existencia_bodega,
+                                        "existencia_almacen_virtual": existencia_almacen_virtual
                                     },
                                     "children": []
                                 }
@@ -310,10 +318,10 @@ class VentaService:
 
                     subcategorias = {}
                     for row in data:
-                        nivel, key, nombre, cantidad_anio_anterior, iva_anio_anterior, cantidad_anio_actual, iva_anio_actual, variacion_mes_porcentaje_cantidad, variacion_mes_cantidad, variacion_porcentaje, variacion_efectivo, existencia = row
+                        nivel, key, nombre, venta_neta_con_iva_anio_anterior, venta_neta_con_iva_anio_actual, variacion_mes_efectivo, variacion_mes_porcentaje, venta_cantidad_anio_anterior, venta_cantidad_anio_actual, variacion_mes_cantidad, variacion_mes_porcentaje_cantidad, porcentaje_participacion_venta_pzs, porcentaje_participacion_inv_pzs, presupuesto, existencia_tienda_cierre_aant, existencia_tienda, variacion_prc_inv, mos_tienda, existencia_bodega, existencia_almacen_virtual = row
                         
                         # Asignar 0 a existencia si es None o NULL
-                        existencia = existencia if existencia is not None else 0
+                        existencia_tienda = existencia_tienda if existencia_tienda is not None else 0
                         
                         # Creando el diccionario para cada nivel
                         item = {
@@ -321,15 +329,23 @@ class VentaService:
                             "key": key,
                             "data": {
                                 "nombre": nombre,
-                                "venta_mensual_anio_anterior_cantidad": cantidad_anio_anterior,
-                                "venta_mensual_anio_anterior_iva": iva_anio_anterior,
-                                "venta_mensual_anio_actual_cantidad": cantidad_anio_actual,
-                                "venta_mensual_anio_actual_iva": iva_anio_actual,
-                                "variacion_mes_porcentaje_cantidad": variacion_mes_porcentaje_cantidad,
+                                "venta_neta_con_iva_anio_anterior": venta_neta_con_iva_anio_anterior,
+                                "venta_neta_con_iva_anio_actual": venta_neta_con_iva_anio_actual,
+                                "variacion_mes_efectivo": variacion_mes_efectivo,
+                                "variacion_mes_porcentaje": variacion_mes_porcentaje,
+                                "venta_cantidad_anio_anterior": venta_cantidad_anio_anterior,
+                                "venta_cantidad_anio_actual": venta_cantidad_anio_actual,
                                 "variacion_mes_cantidad": variacion_mes_cantidad,
-                                "variacion_mes_porcentaje": variacion_porcentaje,
-                                "variacion_mes_efectivo": variacion_efectivo,
-                                "existencia": existencia
+                                "variacion_mes_porcentaje_cantidad": variacion_mes_porcentaje_cantidad,
+                                "porcentaje_participacion_venta_pzs": porcentaje_participacion_venta_pzs,
+                                "porcentaje_participacion_inv_pzs": porcentaje_participacion_inv_pzs,
+                                "presupuesto": presupuesto,
+                                "existencia_tienda_cierre_aant": existencia_tienda_cierre_aant,
+                                "existencia_tienda": existencia_tienda,
+                                "variacion_prc_inv": variacion_prc_inv,
+                                "mos_tienda": mos_tienda,
+                                "existencia_bodega": existencia_bodega,
+                                "existencia_almacen_virtual": existencia_almacen_virtual
                             },
                             "children": []
                         }

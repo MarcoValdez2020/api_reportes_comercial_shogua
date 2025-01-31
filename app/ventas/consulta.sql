@@ -4,8 +4,8 @@ WITH variables AS (
         '2024-01-31'::date AS fecha_fin_anio_anterior,
         '2025-01-01'::date AS fecha_inicio_anio_actual,
         '2025-01-31'::date AS fecha_fin_anio_actual,
-        ARRAY['TSCUN02', '']::text[] AS whscodes,
-        'TOUS'::text AS nombre_marca,
+        ARRAY['PENGDL01', '']::text[] AS whscodes,
+        'PENGUIN'::text AS nombre_marca,
         '2024-12-01'::date AS fecha_cierre_anio_anterior,
         '2024-01-01'::date AS fecha_inicio_periodo_ventas_prom,
         '2024-12-31'::date AS fecha_fin_periodo_ventas_prom,
@@ -365,16 +365,18 @@ SELECT
     COALESCE(t.variacion_mes_porcentaje_cantidad, 0) AS variacion_mes_porcentaje_cantidad,
     COALESCE(h.existencia_tienda_cm_aant, 0) AS existencia_tienda_cierre_aant,
     COALESCE(i.existencia_tienda, 0) AS existencia_tienda,
-	COALESCE(pv.venta_promedio, 0) AS venta_promedio,
     ROUND(COALESCE((CAST(i.existencia_tienda AS numeric) / NULLIF(CAST(h.existencia_tienda_cm_aant AS numeric), 0)) - 1, 0), 2) AS variacion_prc_inv,
-    --COALESCE(vt.total_ventas_tienda, 0) AS total_ventas_tienda,
     ROUND(COALESCE(t.cantidad_anio_actual, 0) / NULLIF(vt.total_ventas_tienda_pzs, 0), 2) AS porcentaje_participacion_venta_pzs,
-    --COALESCE(invtot.total_existencias_tiendas, 0) AS total_existencias_tiendas,
 	ROUND(COALESCE(CAST(existencia_tienda AS numeric) / NULLIF(CAST(total_existencias_tiendas AS numeric), 0), 0), 2) AS porcentaje_participacion_inv_pzs,
     ROUND(COALESCE(t.iva_anio_actual, 0) / NULLIF(vt.total_ventas_efectivo, 0) * spt.venta_objetivo, 2) AS presupuesto,
 	--Calculo del mos de tienda
-	ROUND(COALESCE((CAST(i.existencia_tienda AS numeric) + CAST(pafpt.existencia AS numeric)) / NULLIF(CAST(pv.venta_promedio AS numeric), 0), 0), 2) AS mos_tienda,
-	-- Agrege
+	pv.venta_promedio as vp,
+	ROUND(
+    (COALESCE(i.existencia_tienda, 0) + COALESCE(pafpt.existencia, 0)) 
+    / NULLIF(COALESCE(pv.venta_promedio, 1), 0),
+    2
+) AS mos_tienda,
+	-- Agregegacion de
 	COALESCE(pafpt.existencia, 0) AS existencia_bodega,
 	COALESCE(iavpn.existencia_almacen_virtual, 0) AS existencia_almacen_virtual
 	
@@ -389,5 +391,5 @@ CROSS JOIN VentasTotalesPorTienda vt
 CROSS JOIN InventariosTotalesPorTienda invtot
 CROSS JOIN SumaPresupuestosTiendas spt
 WHERE --t.key ILIKE 'BELLEZA%'
-    NOT (cantidad_anio_actual<= 0 AND i.existencia_tienda<= 0) --and t.nivel = 'CATEGORIA'
+    NOT (cantidad_anio_anterior <=0 AND cantidad_anio_actual<= 0 AND i.existencia_tienda<= 0) --and t.nivel = 'CATEGORIA'
 ORDER BY iva_anio_actual DESC;
