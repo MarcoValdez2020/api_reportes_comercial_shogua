@@ -360,7 +360,7 @@ class VentaRepository:
                     SELECT 
                         'DEPARTAMENTO' AS nivel,
                         departamento AS key,
-                        departamento AS nombre,
+                        --departamento AS nombre,
                         SUM(existencia) AS existencia_tienda_cm_aant
                     FROM historial_inventario_tienda
                     JOIN producto ON producto.id_producto = historial_inventario_tienda.id_producto
